@@ -31,6 +31,10 @@ const accountSchema = new mongoose.Schema({
     type: Date,
     required: false,
   },
+  verifyMail: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Account = mongoose.model("Account", accountSchema);

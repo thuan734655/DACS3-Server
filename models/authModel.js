@@ -32,11 +32,12 @@ const loginModel = async (accountName, password, type) => {
   }
 
   const isMatchPassword = await bcrypt.compare(password, account.password);
-  console.log(isMatchPassword);
+  const verifyMail = account.verifyMail;
+
   if (!isMatchPassword) {
     throw new Error("Invali password");
   }
-  return account;
+  return { account, verifyMail, email: account.email };
 };
 
 export { registerModel, loginModel };

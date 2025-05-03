@@ -1,14 +1,12 @@
 import { registerModel, loginModel } from "../models/authModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import sendOTPModel from "../models/sendOTPModel.js";
-import generateOTP from "../utils/otp/generateOTP.js";
+import sendOTP from "../utils/otp/sendOtp.js";
 
 dotenv.config();
 
 const registerController = async (req, res) => {
   const { username, email, contactNumber, password } = req.body;
-  console.log(username, email, contactNumber, password);
   try {
     const newAccount = await registerModel(
       username,
@@ -16,9 +14,9 @@ const registerController = async (req, res) => {
       contactNumber,
       password
     );
-    //send otp 
-    const { otp, create_at_otp } = generateOTP();
-    sendOTPModel(email, otp, create_at_otp);
+
+    //send otp
+    sendOTP(email);
 
     res.status(201).json({
       message: "Account created successfully",
@@ -33,10 +31,26 @@ const registerController = async (req, res) => {
   }
 };
 
+// accountName boi vi dang nhap co the su dung email hoac so dien thoai
+// type E la email, S la so dien thoai
+// email phai lay tu loginModel boi vi client gui len khong chac chan do la email. loginModel tra ve dung email cua account dang dang nhap.
 const loginController = async (req, res) => {
   const { accountName, password, type } = req.body;
   try {
-    const account = await loginModel(accountName, password, type);
+    const { account, verifyMail, email } = await loginModel(
+      accountName,
+      password,
+      type
+    );
+    if (!verifyMail) {
+      //send otp
+      await sendOTP(email);
+
+      return res.status(401).json({
+        error: "Please verify your email before logging in",
+        action: "verify_email",
+      });
+    }
     if (!account) {
       return res.status(401).json({ error: "Invalid username or password" });
     }
