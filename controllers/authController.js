@@ -6,6 +6,7 @@ dotenv.config();
 
 const registerController = async (req, res) => {
   const { username, email, contactNumber, password } = req.body;
+  console.log(username, email, contactNumber, password);
   try {
     const newAccount = await registerModel(
       username,
@@ -17,7 +18,7 @@ const registerController = async (req, res) => {
       message: "Account created successfully",
       account: {
         username: newAccount.username,
-        email: newAccount.mail,
+        email: newAccount.email,
         contactNumber: newAccount.contactNumber,
       },
     });

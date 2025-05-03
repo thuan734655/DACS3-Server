@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import connectDB from "../config/connectDB.js";
+import sendMail from "../utils/mail/sendMail.js";
 
 connectDB();
 
@@ -40,12 +41,11 @@ const registerModel = async (username, email, contactNumber, password) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const newAccount = new Account({
-    username,
-    password: hashedPassword,
     email,
     contactNumber,
+    password: hashedPassword,
+    username,
   });
-
   await newAccount.save();
   return newAccount;
 };
