@@ -1,6 +1,8 @@
 import { registerModel, loginModel } from "../models/authModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import sendOTPModel from "../models/sendOTPModel.js";
+import generateOTP from "../utils/otp/generateOTP.js";
 
 dotenv.config();
 
@@ -14,6 +16,10 @@ const registerController = async (req, res) => {
       contactNumber,
       password
     );
+    //send otp 
+    const { otp, create_at_otp } = generateOTP();
+    sendOTPModel(email, otp, create_at_otp);
+
     res.status(201).json({
       message: "Account created successfully",
       account: {

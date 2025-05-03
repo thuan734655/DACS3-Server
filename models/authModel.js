@@ -1,34 +1,5 @@
-import mongoose from "mongoose";
+import Account from "./model_database/accounts.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import connectDB from "../config/connectDB.js";
-import sendMail from "../utils/mail/sendMail.js";
-
-connectDB();
-
-const accountSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  contactNumber: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-});
-
-const Account = mongoose.model("Account", accountSchema);
 
 const registerModel = async (username, email, contactNumber, password) => {
   const ExistingAccount = await Account.findOne({
