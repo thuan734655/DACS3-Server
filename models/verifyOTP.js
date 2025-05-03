@@ -1,0 +1,26 @@
+import Account from "./model_database/accounts.js";
+import updateOTPModel from "./updateOTP.js";
+
+const verifyOTPModel = async (email, otp) => {
+  const account = await Account.findOne({ email: { $eq: email } });
+  if (!account) {
+    throw new Error("Email not found");
+  }
+  // check thoi gian co hieu luc otp
+  const isEffectiveOTP = account.create_at_otp > Date.now() - 10 * 60 * 1000;
+  if (!isEffectiveOTP) {
+    return { isEffectiveOTP };
+  }
+  // check match otp
+  const isMatchOTP = account.otp === otp;
+  if (!isMatchOTP) {
+    return { isEffectiveOTP, isMatchOTP };
+  }
+  // update otp to null and verifyMail to true
+  const verifyMail = true;
+  updateOTPModel(email, null, null, verifyMail); // (email, otp, create_at_otp, verifyMail)
+
+  return { isMatchOTP, isEffectiveOTP };
+};
+
+export default verifyOTPModel;

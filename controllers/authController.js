@@ -16,7 +16,8 @@ const registerController = async (req, res) => {
     );
 
     //send otp
-    sendOTP(email);
+    const verifyMail = false;
+    sendOTP(email, verifyMail);
 
     res.status(201).json({
       message: "Account created successfully",
@@ -44,11 +45,13 @@ const loginController = async (req, res) => {
     );
     if (!verifyMail) {
       //send otp
-      await sendOTP(email);
+      const verifyMail = false;
+      await sendOTP(email, verifyMail);
 
       return res.status(401).json({
         error: "Please verify your email before logging in",
         action: "verify_email",
+        email: email,
       });
     }
     if (!account) {

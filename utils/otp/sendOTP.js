@@ -1,8 +1,8 @@
-import updateOTPModel from "../../models/sendOTPModel.js";
+import updateOTPModel from "../../models/updateOTP.js";
 import sendMail from "../mail/sendMail.js";
 import generateOTP from "./generateOTP.js";
 
-const sendOTP = async (email) => {
+const sendOTP = async (email, verifyMail) => {
   const { otp, create_at_otp } = generateOTP();
   await sendMail(
     email,
@@ -10,7 +10,7 @@ const sendOTP = async (email) => {
     `Your OTP is ${otp}`,
     `<h1>Your OTP is ${otp}</h1>`
   );
-  updateOTPModel(email, otp, create_at_otp);
+  updateOTPModel(email, otp, create_at_otp, verifyMail);
 };
 
 export default sendOTP;
