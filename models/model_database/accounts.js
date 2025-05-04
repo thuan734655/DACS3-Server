@@ -35,6 +35,10 @@ const accountSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  deviceID: {
+    type: String,
+    required: false,
+  },
 });
 
 const Account = mongoose.model("Account", accountSchema);

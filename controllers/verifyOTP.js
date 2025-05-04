@@ -1,9 +1,13 @@
 import verifyOTPModel from "../models/verifyOTP.js";
 
 const verifyOTPController = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp, deviceID } = req.body;
   try {
-    const { isEffectiveOTP, isMatchOTP } = await verifyOTPModel(email, otp);
+    const { isEffectiveOTP, isMatchOTP } = await verifyOTPModel(
+      email,
+      otp,
+      deviceID
+    );
     if (!isEffectiveOTP) {
       return res.status(400).json({
         error: "OTP has expired",

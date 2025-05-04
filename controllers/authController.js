@@ -36,13 +36,18 @@ const registerController = async (req, res) => {
 // type E la email, S la so dien thoai
 // email phai lay tu loginModel boi vi client gui len khong chac chan do la email. loginModel tra ve dung email cua account dang dang nhap.
 const loginController = async (req, res) => {
-  const { accountName, password, type } = req.body;
+  const { accountName, password, type, deviceID } = req.body;
   try {
-    const { account, verifyMail, email } = await loginModel(
+    const { account, verifyMail, email, isMatchDeviceID } = await loginModel(
       accountName,
       password,
-      type
+      type,
+      deviceID
     );
+    if (!account) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
     if (!verifyMail) {
       //send otp
       const verifyMail = false;
@@ -54,8 +59,13 @@ const loginController = async (req, res) => {
         email: email,
       });
     }
-    if (!account) {
-      return res.status(401).json({ error: "Invalid username or password" });
+    console.log("isMatchDeviceID", isMatchDeviceID);
+    if (!isMatchDeviceID) {
+      return res.status(401).json({
+        error: "Invalid device ID",
+        action: "2fa",
+        data: { email: email },
+      });
     }
     const token = jwt.sign(
       { id: account._id, username: account.username, email: account.email },
