@@ -1,7 +1,7 @@
 import { registerModel, loginModel } from "../models/authModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import sendOTP from "../helper/otp/sendOtp.js";
+import sendOTP from "../helper/otp/sendOTP.js";
 
 dotenv.config();
 
