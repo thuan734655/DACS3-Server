@@ -4,7 +4,7 @@ import {
   registerController,
 } from "../controllers/authController.js";
 import validate from "../middlewares/validate_middelware.js";
-import { loginSchema, registerSchema } from "../utils/joi/auth_schema.js";
+import { loginSchema, registerSchema } from "../helper/joi/auth_schema.js";
 
 const router = Router();
 

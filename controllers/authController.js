@@ -1,7 +1,7 @@
 import { registerModel, loginModel } from "../models/authModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import sendOTP from "../utils/otp/sendOtp.js";
+import sendOTP from "../helper/otp/sendOtp.js";
 
 dotenv.config();
 
@@ -37,6 +37,7 @@ const registerController = async (req, res) => {
 // email phai lay tu loginModel boi vi client gui len khong chac chan do la email. loginModel tra ve dung email cua account dang dang nhap.
 const loginController = async (req, res) => {
   const { accountName, password, type, deviceID } = req.body;
+  console.log("accountName", accountName);
   try {
     const { account, verifyMail, email, isMatchDeviceID } = await loginModel(
       accountName,
