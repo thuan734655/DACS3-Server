@@ -10,21 +10,21 @@ const verifyOTPController = async (req, res) => {
     );
     if (!isEffectiveOTP) {
       return res.status(400).json({
-        error: "OTP has expired",
+        message: "OTP has expired",
         action: "get_new_otp",
         data: { email },
       });
     }
     if (!isMatchOTP) {
       return res.status(401).json({
-        error: "Invalid OTP",
+        message: "Invalid OTP",
         action: "re-enter_otp",
         data: { email },
       });
     }
     res.status(200).json({ message: "OTP verified successfully" });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 

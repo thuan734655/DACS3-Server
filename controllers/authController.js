@@ -28,7 +28,7 @@ const registerController = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -55,7 +55,7 @@ const loginController = async (req, res) => {
       await sendOTP(email, verifyMail);
 
       return res.status(401).json({
-        error: "Please verify your email before logging in",
+        message: "Please verify your email before logging in",
         action: "verify_email",
         email: email,
       });
@@ -63,7 +63,7 @@ const loginController = async (req, res) => {
     console.log("isMatchDeviceID", isMatchDeviceID);
     if (!isMatchDeviceID) {
       return res.status(401).json({
-        error: "Invalid device ID",
+        message: "Invalid device ID",
         action: "2fa",
         data: { email: email },
       });
@@ -83,7 +83,7 @@ const loginController = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
