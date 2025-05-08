@@ -1,4 +1,4 @@
-import sendOTP from "../helper/otp/sendOtp.js";
+import sendOTP from "../helper/otp/sendOTP.js";
 
 const resendOTP = async (req, res) => {
   const { email } = req.body;
