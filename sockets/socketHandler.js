@@ -1,6 +1,6 @@
 const userSocketMap = {};
 
-const initSocket = (io) => {
+const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.user.username} (${socket.id})`);
     userSocketMap[socket.user.userId] = socket.id;
@@ -21,4 +21,4 @@ const initSocket = (io) => {
   });
 };
 
-export default initSocket;
+export default socketHandler;

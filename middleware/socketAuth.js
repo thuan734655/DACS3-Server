@@ -29,4 +29,4 @@ const socketAuth = (socket, next) => {
   }
 };
 
-module.exports = { auth, socketAuth };
+export  { auth, socketAuth };
