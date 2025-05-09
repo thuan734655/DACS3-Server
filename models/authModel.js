@@ -1,13 +1,11 @@
 import Account from "./model_database/accounts.js";
 import bcrypt from "bcryptjs";
-import updateDeviceID from "./updateDeviceID.js";
+import User from "./model_database/users.js";
 
 const registerModel = async (username, email, contactNumber, password) => {
-  const ExistingAccount = await Account.findOne({
-    username: { $eq: username },
-  });
+  const existingAccount = await Account.findOne({ username });
 
-  if (ExistingAccount) {
+  if (existingAccount) {
     throw new Error("Username already exists");
   }
 
@@ -18,7 +16,16 @@ const registerModel = async (username, email, contactNumber, password) => {
     password: hashedPassword,
     username,
   });
+
   await newAccount.save();
+
+  const newUser = new User({
+    name: username,
+    avatar: "",
+  });
+
+  await newUser.save();
+
   return newAccount;
 };
 
@@ -36,12 +43,10 @@ const loginModel = async (accountName, password, type, deviceID) => {
 
   const verifyMail = account.verifyMail;
 
-  let isMatchDeviceID = account.deviceID === deviceID ? true : false;
-
   if (!isMatchPassword) {
     throw new Error("Invali password");
   }
-  return { account, verifyMail, email: account.email, isMatchDeviceID };
+  return { account, verifyMail, email: account.email };
 };
 
 export { registerModel, loginModel };

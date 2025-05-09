@@ -40,7 +40,7 @@ const loginController = async (req, res) => {
   const { accountName, password, type, deviceID } = req.body;
   console.log("accountName", accountName);
   try {
-    const { account, verifyMail, email, isMatchDeviceID } = await loginModel(
+    const { account, verifyMail, email } = await loginModel(
       accountName,
       password,
       type,
@@ -61,14 +61,13 @@ const loginController = async (req, res) => {
         email: email,
       });
     }
-    console.log("isMatchDeviceID", isMatchDeviceID);
-    if (!isMatchDeviceID) {
-      return res.status(401).json({
-        message: "Invalid device ID",
-        action: "2fa",
-        data: { email: email },
-      });
-    }
+    // if (!isMatchDeviceID) {
+    //   return res.status(401).json({
+    //     message: "Invalid device ID",
+    //     action: "2fa",
+    //     data: { email: email },
+    //   });
+    // }
     const token = jwt.sign(
       { id: account._id, username: account.username, email: account.email },
       process.env.JWT_SECRET,

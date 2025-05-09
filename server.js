@@ -9,6 +9,7 @@ import initSocket from "./sockets/socketHandler.js";
 import { socketAuth } from "./middleware/socketAuth.js";
 import http from "http";
 import { Server } from "socket.io";
+import home from "./routes/home.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use("/api/auth", authroutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/channel", channel);
 app.use("/api/workspace", workspace);
+app.use("/api/home", home);
 
 // Tạo server HTTP
 const server = http.createServer(app);
