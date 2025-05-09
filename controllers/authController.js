@@ -40,7 +40,7 @@ const loginController = async (req, res) => {
   const { accountName, password, type, deviceID } = req.body;
   console.log("accountName", accountName);
   try {
-    const { account, verifyMail, email } = await loginModel(
+    const { account, verifyMail, email, user } = await loginModel(
       accountName,
       password,
       type,
@@ -49,6 +49,8 @@ const loginController = async (req, res) => {
     if (!account) {
       return res.status(401).json({ error: "Invalid username or password" });
     }
+
+    console.log("verifyMail", user);
 
     if (!verifyMail) {
       //send otp
@@ -69,7 +71,7 @@ const loginController = async (req, res) => {
     //   });
     // }
     const token = jwt.sign(
-      { id: account._id, username: account.username, email: account.email },
+      { id: user._id, username: user.name, email: account.email },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );

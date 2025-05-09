@@ -16,6 +16,18 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  role: [
+    {
+      workspace: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Workspace",
+      },
+      role: {
+        type: String,
+        enum: ["Leader", "Member"],
+      },
+    },
+  ],
 });
 
 const User = mongoose.model("User", userSchema);

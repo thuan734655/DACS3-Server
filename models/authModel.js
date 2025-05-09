@@ -10,21 +10,22 @@ const registerModel = async (username, email, contactNumber, password) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newAccount = new Account({
-    email,
-    contactNumber,
-    password: hashedPassword,
-    username,
-  });
-
-  await newAccount.save();
 
   const newUser = new User({
     name: username,
     avatar: "",
   });
+  const savedUser = await newUser.save();
 
-  await newUser.save();
+  const newAccount = new Account({
+    email,
+    contactNumber,
+    password: hashedPassword,
+    username,
+    user_id: savedUser._id,
+  });
+
+  await newAccount.save();
 
   return newAccount;
 };
@@ -35,9 +36,6 @@ const loginModel = async (accountName, password, type, deviceID) => {
       ? { email: { $eq: accountName } }
       : { contactNumber: { $eq: accountName } };
   const account = await Account.findOne(query);
-  if (!account) {
-    throw new Error("Invalid username or password");
-  }
 
   const isMatchPassword = await bcrypt.compare(password, account.password);
 
@@ -46,7 +44,15 @@ const loginModel = async (accountName, password, type, deviceID) => {
   if (!isMatchPassword) {
     throw new Error("Invali password");
   }
-  return { account, verifyMail, email: account.email };
+
+  let user = null;
+  if (account && isMatchPassword && verifyMail) {
+    user = await User.findById(account.user_id);
+    if (!user) {
+      throw new Error("User not found");
+    }
+  }
+  return { account, verifyMail, email: account.email, user };
 };
 
 export { registerModel, loginModel };

@@ -18,8 +18,8 @@ const workspaceSchema = new mongoose.Schema({
     required: true,
   },
   created_at: {
-    type: "Date",
-    default: "Date.now",
+    type: Date,
+    default: Date.now,
   },
   members: {
     type: [

@@ -6,10 +6,11 @@ import otpRoutes from "./routes/otp.js";
 import channel from "./routes/channelRoutes.js";
 import workspace from "./routes/workspace.js";
 import initSocket from "./sockets/socketHandler.js";
-import { socketAuth } from "./middleware/socketAuth.js";
+import { socketAuth } from "./middlewares/socketAuth.js";
 import http from "http";
 import { Server } from "socket.io";
 import home from "./routes/home.js";
+import Kanban from "./routes/kanban.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/otp", otpRoutes);
 app.use("/api/channel", channel);
 app.use("/api/workspace", workspace);
 app.use("/api/home", home);
+app.use("/api/", Kanban);
 
 // Tạo server HTTP
 const server = http.createServer(app);
