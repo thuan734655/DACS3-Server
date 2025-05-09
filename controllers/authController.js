@@ -21,6 +21,7 @@ const registerController = async (req, res) => {
 
     res.status(201).json({
       message: "Account created successfully",
+      success: true,
       account: {
         username: newAccount.username,
         email: newAccount.email,
@@ -76,6 +77,7 @@ const loginController = async (req, res) => {
     res.status(200).json({
       message: "Login successful",
       token,
+      success: true,
       account: {
         username: account.username,
         email: account.email,
