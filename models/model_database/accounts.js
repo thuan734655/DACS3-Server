@@ -18,11 +18,6 @@ const accountSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   otp: {
     type: String,
     required: false,

@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 import User from "./model_database/users.js";
 
 const registerModel = async (username, email, contactNumber, password) => {
-  const existingAccount = await Account.findOne({ username });
+  const existingAccount = await Account.findOne({ email });
 
   if (existingAccount) {
-    throw new Error("Username already exists");
+    throw new Error("Email already exists");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -21,7 +21,6 @@ const registerModel = async (username, email, contactNumber, password) => {
     email,
     contactNumber,
     password: hashedPassword,
-    username,
     user_id: savedUser._id,
   });
 

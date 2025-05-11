@@ -6,10 +6,9 @@ import sendOTP from "../helper/otp/sendOTP.js";
 dotenv.config();
 
 const registerController = async (req, res) => {
-  const { username, email, contactNumber, password } = req.body;
+  const { email, contactNumber, password } = req.body;
   try {
     const newAccount = await registerModel(
-      username,
       email,
       contactNumber,
       password

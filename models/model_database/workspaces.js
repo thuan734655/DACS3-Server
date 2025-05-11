@@ -40,12 +40,7 @@ const workspaceSchema = new mongoose.Schema({
     type: ["ObjectId"],
     ref: "Channel",
     required: false,
-  },
-  task_boards: {
-    type: ["ObjectId"],
-    ref: "TaskBoard",
-    required: false,
-  },
+  }
 });
 
 const Workspace = mongoose.model("Workspace", workspaceSchema);
