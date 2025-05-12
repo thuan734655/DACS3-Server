@@ -1,6 +1,7 @@
 import Account from "./model_database/accounts.js";
 import updateDeviceID from "./updateDeviceID.js";
 import updateOTPModel from "./updateOTP.js";
+import updateStatusMail from "./updateStatusMail..js";
 
 const verifyOTPModel = async (email, otp, deviceID) => {
   const account = await Account.findOne({ email: { $eq: email } });
@@ -17,9 +18,10 @@ const verifyOTPModel = async (email, otp, deviceID) => {
   if (!isMatchOTP) {
     return { isEffectiveOTP, isMatchOTP };
   }
-  // update otp to null and verifyMail to true
-  const verifyMail = true;
-  updateOTPModel(email, null, null, verifyMail); // (email, otp, create_at_otp, verifyMail)
+
+  updateOTPModel(email, null, null);
+
+  updateStatusMail(email, true); // set verifyMail => true
 
   updateDeviceID(email, deviceID); // set deviceID => 2fa
 

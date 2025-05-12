@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import connectDB from "../../config/connectDB.js";
+import e from "express";
 
 connectDB();
 
@@ -22,21 +23,30 @@ const reportSchema = new mongoose.Schema({
     type: "String",
     required: true,
   },
-  tasks: {
-    type: [
-      {
-        task_id: {
-          type: "ObjectId",
-          ref: "Task",
-        },
-        status: {
-          type: "String",
-          enum: ["To Do", "In Progress", "Done"],
-        },
+  inprogress: [
+    {
+      issue: {
+        type: "String",
+        enum: [("task", "bug")],
+        required: false,
       },
-    ],
-    required: false,
-  },
+      progress: {
+        type: "Number",
+        required: false,
+        default: 0,
+      },
+    },
+  ],
+  completed: [
+    {
+      issue: {
+        type: "String",
+        enum: [("task", "bug")],
+        required: false,
+      },
+    },
+  ],
+
   created_at: {
     type: "Date",
     default: "Date.now",

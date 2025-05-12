@@ -28,7 +28,6 @@ const channelSchema = new mongoose.Schema({
   members: [
     {
       type: String,
-      
     },
   ],
   is_private: {

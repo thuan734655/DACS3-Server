@@ -1,6 +1,7 @@
 import Account from "./model_database/accounts.js";
 import bcrypt from "bcryptjs";
 import User from "./model_database/users.js";
+import updateDeviceID from "./updateDeviceID.js";
 
 const registerModel = async (username, email, contactNumber, password) => {
   const existingAccount = await Account.findOne({ email });
@@ -26,7 +27,7 @@ const registerModel = async (username, email, contactNumber, password) => {
 
   await newAccount.save();
 
-  return newAccount;
+  return { newAccount, newUser };
 };
 
 const loginModel = async (accountName, password, type, deviceID) => {
@@ -40,8 +41,13 @@ const loginModel = async (accountName, password, type, deviceID) => {
 
   const verifyMail = account.verifyMail;
 
+  let isMatchDeviceID =
+    account.deviceID != null
+      ? account.deviceID === deviceID
+      : (updateDeviceID(account.email, deviceID), true);
+
   if (!isMatchPassword) {
-    throw new Error("Invali password");
+    throw new Error("Invalid password");
   }
 
   let user = null;
@@ -51,7 +57,21 @@ const loginModel = async (accountName, password, type, deviceID) => {
       throw new Error("User not found");
     }
   }
-  return { account, verifyMail, email: account.email, user };
+  return { account, verifyMail, email: account.email, user, isMatchDeviceID };
 };
 
-export { registerModel, loginModel };
+const resetPasswordModel = async (email, password) => {
+  const account = await Account.findOne({ email });
+  if (!account) {
+    throw new Error("Account not found");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  account.password = hashedPassword;
+
+  await account.save();
+
+  return account;
+};
+
+export { registerModel, loginModel, resetPasswordModel };

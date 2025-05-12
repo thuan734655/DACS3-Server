@@ -7,7 +7,7 @@ import {
 
 const usernameSchema = Joi.string()
   .min(3)
-  .max(10)
+  .max(50)
   .regex(/^[a-zA-Z]+$/)
   .required()
   .messages({
@@ -31,6 +31,11 @@ const deviceIDSchema = Joi.string().required().messages({
   "string.empty": "Device ID is required",
 });
 
+const otpSchema = Joi.string().length(6).required().messages({
+  "string.empty": "OTP is required",
+  "string.length": "OTP must be 6 characters long",
+});
+
 const loginSchema = Joi.object({
   email: emailSchema.optional(),
   contactNumber: contactNumberSchema.optional(),
@@ -46,4 +51,22 @@ const registerSchema = Joi.object({
   password: passwordSchema,
 });
 
-export { loginSchema, registerSchema };
+const forgotPasswordSchema = Joi.object({
+  email: emailSchema,
+});
+const verifyEmailSchema = Joi.object({
+  email: emailSchema,
+});
+const resetPasswordSchema = Joi.object({
+  email: emailSchema,
+  password: passwordSchema,
+  otp: otpSchema,
+});
+
+export {
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
+  verifyEmailSchema
+};

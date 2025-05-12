@@ -9,16 +9,6 @@ const taskSchema = new mongoose.Schema({
     ref: "Workspace",
     required: true,
   },
-  channel_id: {
-    type: "ObjectId",
-    ref: "Channel",
-    required: false,
-  },
-  message_id: {
-    type: "ObjectId",
-    ref: "Message",
-    required: false,
-  },
   title: {
     type: "String",
     required: true,
@@ -37,7 +27,11 @@ const taskSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  deadline: {
+  due_date: {
+    type: "Date",
+    required: false,
+  },
+  start_date: {
     type: "Date",
     required: false,
   },
