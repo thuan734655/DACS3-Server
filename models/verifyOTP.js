@@ -25,7 +25,7 @@ const verifyOTPModel = async (email, otp, deviceID) => {
 
   updateDeviceID(email, deviceID); // set deviceID => 2fa
 
-  return { isMatchOTP, isEffectiveOTP };
+  return { isEffectiveOTP, isMatchOTP };
 };
 
 export default verifyOTPModel;

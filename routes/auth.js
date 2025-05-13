@@ -30,6 +30,6 @@ router.post(
   forgotPasswordController
 );
 
-router.post("/veify-email", validate(verifyEmailSchema), verifyEmailController);
+router.post("/verify-email", validate(verifyEmailSchema), verifyEmailController);
 
 export default router;

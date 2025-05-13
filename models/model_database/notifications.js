@@ -14,6 +14,11 @@ const notificationSchema = new mongoose.Schema({
     enum: ["mention", "task", "reminder", "report"],
     required: true,
   },
+  workspace_id: {
+    type: "ObjectId",
+    ref: "Workspace",
+    required: true,
+  },
   content: {
     type: "String",
     required: true,

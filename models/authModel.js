@@ -31,12 +31,16 @@ const registerModel = async (username, email, contactNumber, password) => {
 };
 
 const loginModel = async (accountName, password, type, deviceID) => {
+  console.log("accountName", accountName, password, type, deviceID);
   const query =
     type === "E"
       ? { email: { $eq: accountName } }
       : { contactNumber: { $eq: accountName } };
   const account = await Account.findOne(query);
-
+  
+  if (!account) {
+    throw new Error("Account not found");
+  }
   const isMatchPassword = await bcrypt.compare(password, account.password);
 
   const verifyMail = account.verifyMail;
