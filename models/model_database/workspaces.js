@@ -30,7 +30,7 @@ const workspaceSchema = new mongoose.Schema({
         },
         role: {
           type: "String",
-          enum: ["Leader", "Member"],
+          enum: ["Leader", "Manager", "Member"],
         },
       },
     ],
@@ -40,7 +40,7 @@ const workspaceSchema = new mongoose.Schema({
     type: ["ObjectId"],
     ref: "Channel",
     required: false,
-  }
+  },
 });
 
 const Workspace = mongoose.model("Workspace", workspaceSchema);

@@ -4,27 +4,27 @@ import connectDB from "../../config/connectDB.js";
 connectDB();
 
 const sprintSchema = new mongoose.Schema({
-  workspace_is: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Workspace",
-    required: true,
-  },
-  create_by: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
   name: {
     type: String,
     required: true,
   },
   description: {
     type: String,
-    required: false,
   },
-  goal: {
+  workspace_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Workspace",
+    required: true,
+  },
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  status: {
     type: String,
-    required: false,
+    enum: ["Planned", "Active", "Completed"],
+    default: "Planned",
   },
   start_date: {
     type: Date,
@@ -34,30 +34,21 @@ const sprintSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  task: {
-    type: [
-      {
-        task_id: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Task",
-        },
-        status: {
-          type: String,
-          enum: ["To Do", "In Progress", "Done"],
-        },
-      },
-    ],
-    required: true,
-  },
-  status: {
+  goal: {
     type: String,
-    enum: ["To Do", "In Progress", "Done"],
-    default: "To Do",
   },
-  progress: {
-    type: Number,
-    default: 0,
+  tasks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Task"
+  }],
+  created_at: {
+    type: Date,
+    default: Date.now,
   },
+  updated_at: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
 const Sprint = mongoose.model("Sprint", sprintSchema);

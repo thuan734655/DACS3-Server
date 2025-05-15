@@ -1,66 +1,39 @@
 import express from "express";
 import {
-  createNotification,
   getAllNotifications,
+  getUnreadNotifications,
   getNotificationById,
-  getNotificationsByWorkspace,
-  getNotificationsByUser,
-  markNotificationAsRead,
-  deleteNotification,
+  createNotification,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification
 } from "../controllers/notificationController.js";
-import validate from "../middlewares/validate_middelware.js";
-import {
-  createNotificationSchema,
-  validateNotificationId,
-  validateWorkspaceId,
-  validateUserId,
-} from "../validations/notificationSchema.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
+// Apply verifyToken middleware to all routes
 router.use(authenticateToken);
 
-// Create a new notification
-router.post("/", validate(createNotificationSchema), createNotification);
-
-// Get all notifications
+// GET all notifications with pagination and filtering
 router.get("/", getAllNotifications);
 
-// Get a notification by ID
-router.get(
-  "/:id",
-  validate(validateNotificationId, "params"),
-  getNotificationById
-);
+// GET unread notifications
+router.get("/unread", getUnreadNotifications);
 
-// Get notifications by workspace ID
-router.get(
-  "/workspace/:workspaceId",
-  validate(validateWorkspaceId, "params"),
-  getNotificationsByWorkspace
-);
+// GET notification by ID
+router.get("/:id", getNotificationById);
 
-// Get notifications by user ID
-router.get(
-  "/user/:userId",
-  validate(validateUserId, "params"),
-  getNotificationsByUser
-);
+// POST create new notification
+router.post("/", createNotification);
 
-// Mark a notification as read
-router.patch(
-  "/:id/read",
-  validate(validateNotificationId, "params"),
-  markNotificationAsRead
-);
+// PUT mark notification as read
+router.put("/:id/read", markAsRead);
 
-// Delete a notification
-router.delete(
-  "/:id",
-  validate(validateNotificationId, "params"),
-  deleteNotification
-);
+// PUT mark all notifications as read
+router.put("/read-all", markAllAsRead);
 
-export default router;
+// DELETE notification
+router.delete("/:id", deleteNotification);
+
+export default router; 

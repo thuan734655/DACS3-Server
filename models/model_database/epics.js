@@ -3,49 +3,64 @@ import connectDB from "../../config/connectDB.js";
 
 connectDB();
 
-const epicSchema = new mongoose.Schema(
-    {
-        workspace_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Workspace",
-        required: true,
-        },
-        name: {
-        type: String,
-        required: true,
-        },
-        description: {
-        type: String,
-        required: false,
-        },
-        created_by: {
-        type: String,
-        required: true,
-        },
-        created_at: {
-        type: Date,
-        default: Date.now,
-        },
-        start_date: {
-        type: Date,
-        required: false,
-        },
-        end_date: {
-        type: Date,
-        required: false,
-        },
-        status: {
-        type: String,
-        enum: ["To Do", "In Progress", "Done"],
-        default: "To Do",
-        },
-        progress: {
-        type: Number,
-        default: 0,
-        },
-        
-    }
-);
+const epicSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+  },
+  workspace_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Workspace",
+    required: true,
+  },
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  assigned_to: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  status: {
+    type: String,
+    enum: ["Todo", "In Progress", "Done"],
+    default: "Todo",
+  },
+  priority: {
+    type: String,
+    enum: ["Low", "Medium", "High", "Critical"],
+    default: "Medium",
+  },
+  start_date: {
+    type: Date,
+  },
+  due_date: {
+    type: Date,
+  },
+  completed_date: {
+    type: Date,
+  },
+  sprint_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Sprint",
+  },
+  tasks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Task"
+  }],
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
+  updated_at: {
+    type: Date,
+    default: Date.now,
+  }
+});
 
 const Epic = mongoose.model("Epic", epicSchema);
 

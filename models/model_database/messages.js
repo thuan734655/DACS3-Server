@@ -4,10 +4,20 @@ import connectDB from "../../config/connectDB.js";
 connectDB();
 
 const messageSchema = new mongoose.Schema({
+  type_message: {
+    type: String,
+    enum: ["channel", "direct"],
+    required: true,
+  },
+  reciver_id: {
+    type: "ObjectId",
+    ref: "User",
+    required: false,
+  },
   channel_id: {
     type: "ObjectId",
     ref: "Channel",
-    required: true,
+    required: false,
   },
   sender_id: {
     type: "ObjectId",
@@ -20,26 +30,12 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: "String",
-    enum: ["text", "image", "file"],
+    enum: ["text", "image"],
     default: "text",
   },
   file_url: {
     type: "String",
     required: false,
-  },
-  mentions: {
-    type: ["ObjectId"],
-    ref: "User",
-    required: false,
-  },
-  reactions: {
-    type: [
-      {
-        emoji: { type: "String" },
-        user_ids: [{ type: "ObjectId", ref: "User" }],
-      },
-    ],
-    default: [],
   },
   thread_parent_id: {
     type: "ObjectId",

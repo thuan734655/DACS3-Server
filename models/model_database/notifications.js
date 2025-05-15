@@ -11,7 +11,11 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: "String",
-    enum: ["mention", "task", "reminder", "report"],
+    enum: ["task", "report", "channel", "epic", "sprint", "bug"],
+    required: true,
+  },
+  type_id: {
+    type: "ObjectId",
     required: true,
   },
   workspace_id: {

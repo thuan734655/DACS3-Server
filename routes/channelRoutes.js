@@ -1,45 +1,47 @@
-import { Router } from "express";
+import express from "express";
 import {
-  createChannelController,
-  getAllChannelsController,
-  getChannelByIdController,
-  updateChannelController,
-  deleteChannelController,
-  addMemberController,
-  removeMemberController,
+  getAllChannels,
+  getChannelById,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  addMember,
+  removeMember,
+  joinChannel,
+  leaveChannel
 } from "../controllers/channelController.js";
-import validate from "../middlewares/validate_middelware.js";
-import {
-  createChannelSchema,
-  updateChannelSchema,
-  addMemberSchema,
-} from "../helper/joi/channel_schema.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 
-const router = Router();
 
-// Áp dụng middleware xác thực cho tất cả các routes
+const router = express.Router();
+
 router.use(authenticateToken);
 
-// Tạo channel mới
-router.post("/", validate(createChannelSchema), createChannelController);
+// GET all channels with pagination
+router.get("/", getAllChannels);
 
-// Lấy tất cả channel trong workspace
-router.get("/workspace/:workspace_id", getAllChannelsController);
+// GET channel by ID
+router.get("/:id", getChannelById);
 
-// Lấy channel theo ID
-router.get("/:id", getChannelByIdController);
+// POST create new channel
+router.post("/", createChannel);
 
-// Cập nhật channel
-router.put("/:id", validate(updateChannelSchema), updateChannelController);
+// PUT update channel
+router.put("/:id", updateChannel);
 
-// Xóa channel
-router.delete("/:id", deleteChannelController);
+// DELETE channel
+router.delete("/:id", deleteChannel);
 
-// Thêm thành viên vào channel
-router.post("/:id/members", validate(addMemberSchema), addMemberController);
+// PUT add member to channel (by admin/owner)
+router.put("/:id/members", addMember);
 
-// Xóa thành viên khỏi channel
-router.delete("/:id/members/:userId", removeMemberController);
+// DELETE remove member from channel (by admin/owner)
+router.delete("/:id/members/:userId", removeMember);
 
-export default router;
+// POST join a channel (self-join)
+router.post("/:id/join", joinChannel);
+
+// DELETE leave a channel (self-leave)
+router.delete("/:id/leave", leaveChannel);
+
+export default router; 

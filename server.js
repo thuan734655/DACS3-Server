@@ -5,15 +5,19 @@ import authroutes from "./routes/auth.js";
 import otpRoutes from "./routes/otp.js";
 import channel from "./routes/channelRoutes.js";
 import workspace from "./routes/workspace.js";
+import messagesRoutes from "./routes/messages.js";
+import directMessageRoutes from "./routes/directMessages.js";
+import channelMessageRoutes from "./routes/channelMessages.js";
+import userRoutes from "./routes/user.js";
+import epicRoutes from "./routes/epics.js";
+import taskRoutes from "./routes/tasks.js";
+import sprintRoutes from "./routes/sprints.js";
+import bugRoutes from "./routes/bugs.js";
+import reportDailyRoutes from "./routes/reportDailies.js";
 import initSocket from "./sockets/socketHandler.js";
 import { socketAuth } from "./middlewares/socketAuth.js";
 import http from "http";
 import { Server } from "socket.io";
-import home from "./routes/home.js";
-import taskRoutes from "./routes/task.js";
-import epicRoutes from "./routes/epic.js";
-import sprintRoutes from "./routes/sprint.js";
-import reportDailyRoutes from "./routes/reportDaily.js";
 import notificationRoutes from "./routes/notification.js";
 
 dotenv.config();
@@ -24,26 +28,33 @@ app.use(cors());
 
 app.use("/api/auth", authroutes);
 app.use("/api/otp", otpRoutes);
-app.use("/api/channel", channel);
+app.use("/api/channels", channel);
 app.use("/api/workspaces", workspace);
-app.use("/api/home", home);
-app.use("/api/tasks", taskRoutes);
+app.use("/api/messages", messagesRoutes);
+app.use("/api/dm", directMessageRoutes);
+app.use("/api/channel-messages", channelMessageRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/epics", epicRoutes);
+app.use("/api/tasks", taskRoutes);
 app.use("/api/sprints", sprintRoutes);
+app.use("/api/bugs", bugRoutes);
 app.use("/api/reports", reportDailyRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);
+
+// Create Socket.IO instance with CORS configuration
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "*", // In production, restrict this to your client domain
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
 // Make io instance available to routes
-app.set('io', io);
+app.set("io", io);
 
 // Socket.IO middleware
 io.use(socketAuth);
@@ -52,6 +63,7 @@ io.use(socketAuth);
 initSocket(io);
 
 // Use the HTTP server to listen, not the Express app
-server.listen(3000, "0.0.0.0", () => {
-  console.log("Server running on all interfaces");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });

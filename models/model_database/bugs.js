@@ -3,7 +3,7 @@ import connectDB from "../../config/connectDB.js";
 
 connectDB();
 
-const taskSchema = new mongoose.Schema({
+const bugSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -16,11 +16,11 @@ const taskSchema = new mongoose.Schema({
     ref: "Workspace",
     required: true,
   },
-  epic_id: {
+  task_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Epic",
+    ref: "Task",
   },
-  created_by: {
+  reported_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -31,34 +31,22 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Todo", "In Progress", "Done"],
-    default: "Todo",
+    enum: ["Open", "In Progress", "Fixed", "Rejected", "Closed"],
+    default: "Open",
   },
-  priority: {
+  severity: {
     type: String,
     enum: ["Low", "Medium", "High", "Critical"],
     default: "Medium",
   },
-  estimated_hours: {
-    type: Number,
-    default: 0,
+  steps_to_reproduce: {
+    type: String,
   },
-  spent_hours: {
-    type: Number,
-    default: 0,
+  expected_behavior: {
+    type: String,
   },
-  start_date: {
-    type: Date,
-  },
-  due_date: {
-    type: Date,
-  },
-  completed_date: {
-    type: Date,
-  },
-  sprint_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Sprint",
+  actual_behavior: {
+    type: String,
   },
   comments: [{
     user_id: {
@@ -101,6 +89,6 @@ const taskSchema = new mongoose.Schema({
   }
 });
 
-const Task = mongoose.model("Task", taskSchema);
+const Bug = mongoose.model("Bug", bugSchema);
 
-export default Task;
+export default Bug;
