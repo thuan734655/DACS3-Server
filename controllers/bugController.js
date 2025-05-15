@@ -10,34 +10,34 @@ export const getAllBugs = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     const query = {};
-    
+
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
     }
-    
+
     // Filter by task_id if provided
     if (req.query.task_id) {
       query.task_id = req.query.task_id;
     }
-    
+
     // Filter by reported_by if provided
     if (req.query.reported_by) {
       query.reported_by = req.query.reported_by;
     }
-    
+
     // Filter by assigned_to if provided
     if (req.query.assigned_to) {
       query.assigned_to = req.query.assigned_to;
     }
-    
+
     // Filter by status if provided
     if (req.query.status) {
       query.status = req.query.status;
     }
-    
+
     // Filter by severity if provided
     if (req.query.severity) {
       query.severity = req.query.severity;
@@ -64,8 +64,7 @@ export const getAllBugs = async (req, res) => {
     console.error("Error fetching bugs:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -96,8 +95,7 @@ export const getBugById = async (req, res) => {
     console.error("Error fetching bug:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -115,7 +113,7 @@ export const createBug = async (req, res) => {
       severity,
       steps_to_reproduce,
       expected_behavior,
-      actual_behavior
+      actual_behavior,
     } = req.body;
 
     const userId = req.user.id;
@@ -128,7 +126,7 @@ export const createBug = async (req, res) => {
         message: "You don't have permission to report bugs in this workspace",
       });
     }
-    
+
     // If task_id provided, verify it exists and belongs to the workspace
     if (task_id) {
       const task = await Task.findById(task_id);
@@ -159,11 +157,11 @@ export const createBug = async (req, res) => {
       expected_behavior,
       actual_behavior,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     const savedBug = await newBug.save();
-    
+
     // Populate the created bug
     const populatedBug = await Bug.findById(savedBug._id)
       .populate("workspace_id")
@@ -181,25 +179,30 @@ export const createBug = async (req, res) => {
         content: `You have been assigned to fix bug "${title}"`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assignNotification.save();
-      
+
       // Emit socket event for notification
-      const io = req.app.get('io');
-      io.to(`user-${assigned_to}`).emit('notification:new', await assignNotification.populate("user_id workspace_id"));
+      const io = req.app.get("io");
+      io.to(`user-${assigned_to}`).emit(
+        "notification:new",
+        await assignNotification.populate("user_id workspace_id")
+      );
     }
 
     // Get workspace members with Leader or Manager role
     const workspace = await Workspace.findById(workspace_id);
     const managementMembers = workspace.members.filter(
-      member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+      (member) =>
+        ["Leader", "Manager"].includes(member.role) &&
+        member.user_id.toString() !== userId
     );
-    
+
     // Notify management members
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     for (const member of managementMembers) {
       const notification = new Notification({
         user_id: member.user_id,
@@ -209,21 +212,31 @@ export const createBug = async (req, res) => {
         content: `New bug "${title}" has been reported in ${workspace.name}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await notification.save();
-      const populatedNotification = await notification.populate("user_id workspace_id");
-      io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+      const populatedNotification = await notification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${member.user_id}`).emit(
+        "notification:new",
+        populatedNotification
+      );
     }
-    
+
     // If bug is related to a task, notify task owner
     if (task_id) {
       const task = await Task.findById(task_id);
-      if (task && task.created_by.toString() !== userId && 
-          (!assigned_to || task.created_by.toString() !== assigned_to.toString()) &&
-          !managementMembers.some(member => member.user_id.toString() === task.created_by.toString())) {
-        
+      if (
+        task &&
+        task.created_by.toString() !== userId &&
+        (!assigned_to ||
+          task.created_by.toString() !== assigned_to.toString()) &&
+        !managementMembers.some(
+          (member) => member.user_id.toString() === task.created_by.toString()
+        )
+      ) {
         const taskOwnerNotification = new Notification({
           user_id: task.created_by,
           type: "bug_reported_for_task",
@@ -232,16 +245,19 @@ export const createBug = async (req, res) => {
           content: `Bug "${title}" has been reported for your task "${task.title}"`,
           related_id: userId,
           is_read: false,
-          created_at: new Date()
+          created_at: new Date(),
         });
-        
+
         await taskOwnerNotification.save();
-        io.to(`user-${task.created_by}`).emit('notification:new', await taskOwnerNotification.populate("user_id workspace_id"));
+        io.to(`user-${task.created_by}`).emit(
+          "notification:new",
+          await taskOwnerNotification.populate("user_id workspace_id")
+        );
       }
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspace_id}`).emit('bug:created', populatedBug);
+    io.to(`workspace-${workspace_id}`).emit("bug:created", populatedBug);
 
     return res.status(201).json({
       success: true,
@@ -251,8 +267,7 @@ export const createBug = async (req, res) => {
     console.error("Error creating bug:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -262,7 +277,7 @@ export const updateBug = async (req, res) => {
   try {
     const bugId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the bug to check workspace permissions
     const bug = await Bug.findById(bugId);
     if (!bug) {
@@ -271,16 +286,19 @@ export const updateBug = async (req, res) => {
         message: "Bug not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(bug.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      bug.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
         message: "You don't have permission to update bugs in this workspace",
       });
     }
-    
+
     const {
       title,
       description,
@@ -290,20 +308,25 @@ export const updateBug = async (req, res) => {
       severity,
       steps_to_reproduce,
       expected_behavior,
-      actual_behavior
+      actual_behavior,
     } = req.body;
-    
+
     // Keep track of status change
     const statusChanged = status && status !== bug.status;
     const previousStatus = bug.status;
-    
+
     // Keep track of whether assignment changed
-    const assignmentChanged = assigned_to && bug.assigned_to && 
-                            assigned_to.toString() !== bug.assigned_to.toString();
+    const assignmentChanged =
+      assigned_to &&
+      bug.assigned_to &&
+      assigned_to.toString() !== bug.assigned_to.toString();
     const previousAssignee = bug.assigned_to;
-    
+
     // If task_id provided and changed, verify it exists and belongs to the workspace
-    if (task_id && (!bug.task_id || task_id.toString() !== bug.task_id.toString())) {
+    if (
+      task_id &&
+      (!bug.task_id || task_id.toString() !== bug.task_id.toString())
+    ) {
       const task = await Task.findById(task_id);
       if (!task) {
         return res.status(404).json({
@@ -318,7 +341,7 @@ export const updateBug = async (req, res) => {
         });
       }
     }
-    
+
     // Update bug
     const updatedBug = await Bug.findByIdAndUpdate(
       bugId,
@@ -329,10 +352,17 @@ export const updateBug = async (req, res) => {
         assigned_to: assigned_to || bug.assigned_to,
         status: status || bug.status,
         severity: severity || bug.severity,
-        steps_to_reproduce: steps_to_reproduce !== undefined ? steps_to_reproduce : bug.steps_to_reproduce,
-        expected_behavior: expected_behavior !== undefined ? expected_behavior : bug.expected_behavior,
-        actual_behavior: actual_behavior !== undefined ? actual_behavior : bug.actual_behavior,
-        updated_at: new Date()
+        steps_to_reproduce:
+          steps_to_reproduce !== undefined
+            ? steps_to_reproduce
+            : bug.steps_to_reproduce,
+        expected_behavior:
+          expected_behavior !== undefined
+            ? expected_behavior
+            : bug.expected_behavior,
+        actual_behavior:
+          actual_behavior !== undefined ? actual_behavior : bug.actual_behavior,
+        updated_at: new Date(),
       },
       { new: true, runValidators: true }
     )
@@ -340,14 +370,16 @@ export const updateBug = async (req, res) => {
       .populate("task_id")
       .populate("reported_by")
       .populate("assigned_to");
-      
+
     // Handle notifications for status changes
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     // If status changed to Fixed/Closed/Rejected, notify the reporter
-    if (statusChanged && 
-        (status === "Fixed" || status === "Closed" || status === "Rejected") && 
-        bug.reported_by.toString() !== userId) {
+    if (
+      statusChanged &&
+      (status === "Fixed" || status === "Closed" || status === "Rejected") &&
+      bug.reported_by.toString() !== userId
+    ) {
       const statusNotification = new Notification({
         user_id: bug.reported_by,
         type: "bug_status_changed",
@@ -356,13 +388,16 @@ export const updateBug = async (req, res) => {
         content: `Bug "${updatedBug.title}" that you reported has been marked as ${status}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await statusNotification.save();
-      io.to(`user-${bug.reported_by}`).emit('notification:new', await statusNotification.populate("user_id workspace_id"));
+      io.to(`user-${bug.reported_by}`).emit(
+        "notification:new",
+        await statusNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // If assigned user changed, notify the new assignee
     if (assignmentChanged) {
       // Notify new assignee
@@ -374,12 +409,15 @@ export const updateBug = async (req, res) => {
         content: `You have been assigned to fix bug "${updatedBug.title}"`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assignNotification.save();
-      io.to(`user-${assigned_to}`).emit('notification:new', await assignNotification.populate("user_id workspace_id"));
-      
+      io.to(`user-${assigned_to}`).emit(
+        "notification:new",
+        await assignNotification.populate("user_id workspace_id")
+      );
+
       // Notify previous assignee
       if (previousAssignee) {
         const unassignNotification = new Notification({
@@ -390,16 +428,19 @@ export const updateBug = async (req, res) => {
           content: `You have been unassigned from bug "${updatedBug.title}"`,
           related_id: userId,
           is_read: false,
-          created_at: new Date()
+          created_at: new Date(),
         });
-        
+
         await unassignNotification.save();
-        io.to(`user-${previousAssignee}`).emit('notification:new', await unassignNotification.populate("user_id workspace_id"));
+        io.to(`user-${previousAssignee}`).emit(
+          "notification:new",
+          await unassignNotification.populate("user_id workspace_id")
+        );
       }
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${bug.workspace_id}`).emit('bug:updated', updatedBug);
+    io.to(`workspace-${bug.workspace_id}`).emit("bug:updated", updatedBug);
 
     return res.status(200).json({
       success: true,
@@ -409,8 +450,7 @@ export const updateBug = async (req, res) => {
     console.error("Error updating bug:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -420,7 +460,7 @@ export const deleteBug = async (req, res) => {
   try {
     const bugId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the bug to check workspace permissions
     const bug = await Bug.findById(bugId);
     if (!bug) {
@@ -429,28 +469,31 @@ export const deleteBug = async (req, res) => {
         message: "Bug not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(bug.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      bug.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
         message: "You don't have permission to delete bugs in this workspace",
       });
     }
-    
+
     // Store bug details before deletion for notifications
     const bugTitle = bug.title;
     const workspaceId = bug.workspace_id;
     const reporterId = bug.reported_by;
     const assignedUserId = bug.assigned_to;
-    
+
     // Delete the bug
     await Bug.findByIdAndDelete(bugId);
-    
+
     // Notify the original reporter if they didn't delete it
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     if (reporterId.toString() !== userId) {
       const reporterNotification = new Notification({
         user_id: reporterId,
@@ -460,15 +503,22 @@ export const deleteBug = async (req, res) => {
         content: `Bug "${bugTitle}" that you reported has been deleted`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await reporterNotification.save();
-      io.to(`user-${reporterId}`).emit('notification:new', await reporterNotification.populate("user_id workspace_id"));
+      io.to(`user-${reporterId}`).emit(
+        "notification:new",
+        await reporterNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // If bug was assigned to someone, notify them
-    if (assignedUserId && assignedUserId.toString() !== userId && assignedUserId.toString() !== reporterId.toString()) {
+    if (
+      assignedUserId &&
+      assignedUserId.toString() !== userId &&
+      assignedUserId.toString() !== reporterId.toString()
+    ) {
       const assigneeNotification = new Notification({
         user_id: assignedUserId,
         type: "bug_deleted",
@@ -477,18 +527,21 @@ export const deleteBug = async (req, res) => {
         content: `Bug "${bugTitle}" that was assigned to you has been deleted`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assigneeNotification.save();
-      io.to(`user-${assignedUserId}`).emit('notification:new', await assigneeNotification.populate("user_id workspace_id"));
+      io.to(`user-${assignedUserId}`).emit(
+        "notification:new",
+        await assigneeNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspaceId}`).emit('bug:deleted', {
+    io.to(`workspace-${workspaceId}`).emit("bug:deleted", {
       bugId,
       workspaceId,
-      message: `Bug "${bugTitle}" has been deleted`
+      message: `Bug "${bugTitle}" has been deleted`,
     });
 
     return res.status(200).json({
@@ -499,8 +552,7 @@ export const deleteBug = async (req, res) => {
     console.error("Error deleting bug:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -511,7 +563,7 @@ export const addComment = async (req, res) => {
     const bugId = req.params.id;
     const { content } = req.body;
     const userId = req.user.id;
-    
+
     // Find the bug
     const bug = await Bug.findById(bugId);
     if (!bug) {
@@ -520,29 +572,33 @@ export const addComment = async (req, res) => {
         message: "Bug not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(bug.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      bug.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to comment on bugs in this workspace",
+        message:
+          "You don't have permission to comment on bugs in this workspace",
       });
     }
-    
+
     // Create new comment
     const newComment = {
       user_id: userId,
       content,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     };
-    
+
     // Add comment to bug
     bug.comments.push(newComment);
-    
+
     await bug.save();
-    
+
     // Get populated bug with populated comments
     const updatedBug = await Bug.findById(bugId)
       .populate("workspace_id")
@@ -550,10 +606,10 @@ export const addComment = async (req, res) => {
       .populate("reported_by")
       .populate("assigned_to")
       .populate("comments.user_id");
-    
+
     // Notify relevant users
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     // Notify bug reporter if they're not the commenter
     if (bug.reported_by.toString() !== userId) {
       const reporterNotification = new Notification({
@@ -564,17 +620,22 @@ export const addComment = async (req, res) => {
         content: `New comment on bug "${bug.title}" that you reported`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await reporterNotification.save();
-      io.to(`user-${bug.reported_by}`).emit('notification:new', await reporterNotification.populate("user_id workspace_id"));
+      io.to(`user-${bug.reported_by}`).emit(
+        "notification:new",
+        await reporterNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // Notify assignee if exists and isn't the commenter or reporter
-    if (bug.assigned_to && 
-        bug.assigned_to.toString() !== userId && 
-        bug.assigned_to.toString() !== bug.reported_by.toString()) {
+    if (
+      bug.assigned_to &&
+      bug.assigned_to.toString() !== userId &&
+      bug.assigned_to.toString() !== bug.reported_by.toString()
+    ) {
       const assigneeNotification = new Notification({
         user_id: bug.assigned_to,
         type: "bug_comment",
@@ -583,17 +644,20 @@ export const addComment = async (req, res) => {
         content: `New comment on bug "${bug.title}" assigned to you`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assigneeNotification.save();
-      io.to(`user-${bug.assigned_to}`).emit('notification:new', await assigneeNotification.populate("user_id workspace_id"));
+      io.to(`user-${bug.assigned_to}`).emit(
+        "notification:new",
+        await assigneeNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${bug.workspace_id}`).emit('bug:commented', {
+    io.to(`workspace-${bug.workspace_id}`).emit("bug:commented", {
       bug: updatedBug,
-      comment: updatedBug.comments[updatedBug.comments.length - 1]
+      comment: updatedBug.comments[updatedBug.comments.length - 1],
     });
 
     return res.status(200).json({
@@ -604,8 +668,7 @@ export const addComment = async (req, res) => {
     console.error("Error adding comment to bug:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
-}; 
+};

@@ -36,8 +36,7 @@ export const getAllChannels = async (req, res) => {
     console.error("Error fetching channels:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -66,8 +65,7 @@ export const getChannelById = async (req, res) => {
     console.error("Error fetching channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -166,8 +164,7 @@ export const createChannel = async (req, res) => {
     console.error("Error creating channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -273,8 +270,7 @@ export const updateChannel = async (req, res) => {
     console.error("Error updating channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -371,8 +367,7 @@ export const deleteChannel = async (req, res) => {
     console.error("Error deleting channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -458,8 +453,7 @@ export const joinChannel = async (req, res) => {
     console.error("Error joining channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -549,8 +543,7 @@ export const leaveChannel = async (req, res) => {
     console.error("Error leaving channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -642,8 +635,7 @@ export const removeMember = async (req, res) => {
     console.error("Error removing member from channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -727,8 +719,7 @@ export const addMember = async (req, res) => {
     console.error("Error adding member to channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };

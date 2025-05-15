@@ -20,8 +20,7 @@ export const getAllUsers = async (req, res) => {
     console.error("Error fetching users:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -45,8 +44,7 @@ export const getUserById = async (req, res) => {
     console.error("Error fetching user:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -71,8 +69,7 @@ export const createUser = async (req, res) => {
     console.error("Error creating user:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -106,8 +103,7 @@ export const updateUser = async (req, res) => {
     console.error("Error updating user:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -132,8 +128,7 @@ export const deleteUser = async (req, res) => {
     console.error("Error deleting user:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 }; 

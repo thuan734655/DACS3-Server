@@ -5,21 +5,20 @@ import Workspace from "../models/model_database/workspaces.js";
 import Notification from "../models/model_database/notifications.js";
 import { checkWorkspacePermission } from "../helper/checkRole.js";
 
-
 // Get all sprints with pagination and filtering
 export const getAllSprints = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    
+
     const query = {};
-    
+
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
     }
-    
+
     // Filter by status if provided
     if (req.query.status) {
       query.status = req.query.status;
@@ -44,8 +43,7 @@ export const getAllSprints = async (req, res) => {
     console.error("Error fetching sprints:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -60,8 +58,8 @@ export const getSprintById = async (req, res) => {
         path: "tasks",
         populate: [
           { path: "assigned_to", model: "User" },
-          { path: "epic_id", model: "Epic" }
-        ]
+          { path: "epic_id", model: "Epic" },
+        ],
       });
 
     if (!sprint) {
@@ -79,8 +77,7 @@ export const getSprintById = async (req, res) => {
     console.error("Error fetching sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -89,15 +86,19 @@ export const getSprintById = async (req, res) => {
 export const getSprintByIdUser = async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Find all tasks assigned to this user
     const userTasks = await Task.find({ assigned_to: userId });
-    
+
     // Get unique sprint IDs from these tasks
-    const sprintIds = [...new Set(userTasks
-      .filter(task => task.sprint_id)
-      .map(task => task.sprint_id.toString()))];
-    
+    const sprintIds = [
+      ...new Set(
+        userTasks
+          .filter((task) => task.sprint_id)
+          .map((task) => task.sprint_id.toString())
+      ),
+    ];
+
     // Find sprints by these IDs
     const sprints = await Sprint.find({ _id: { $in: sprintIds } })
       .populate("workspace_id")
@@ -106,8 +107,8 @@ export const getSprintByIdUser = async (req, res) => {
         path: "tasks",
         populate: [
           { path: "assigned_to", model: "User" },
-          { path: "epic_id", model: "Epic" }
-        ]
+          { path: "epic_id", model: "Epic" },
+        ],
       });
 
     return res.status(200).json({
@@ -119,8 +120,7 @@ export const getSprintByIdUser = async (req, res) => {
     console.error("Error fetching user sprints:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -135,7 +135,7 @@ export const createSprint = async (req, res) => {
       start_date,
       end_date,
       goal,
-      status
+      status,
     } = req.body;
 
     const userId = req.user.id;
@@ -145,7 +145,8 @@ export const createSprint = async (req, res) => {
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to create sprints in this workspace",
+        message:
+          "You don't have permission to create sprints in this workspace",
       });
     }
 
@@ -159,11 +160,11 @@ export const createSprint = async (req, res) => {
       goal,
       status: status || "Planned",
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     const savedSprint = await newSprint.save();
-    
+
     // Populate the created sprint
     const populatedSprint = await Sprint.findById(savedSprint._id)
       .populate("workspace_id")
@@ -172,12 +173,14 @@ export const createSprint = async (req, res) => {
     // Get workspace members with Leader or Manager role
     const workspace = await Workspace.findById(workspace_id);
     const managementMembers = workspace.members.filter(
-      member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+      (member) =>
+        ["Leader", "Manager"].includes(member.role) &&
+        member.user_id.toString() !== userId
     );
-    
+
     // Notify management members
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     for (const member of managementMembers) {
       const notification = new Notification({
         user_id: member.user_id,
@@ -187,16 +190,21 @@ export const createSprint = async (req, res) => {
         content: `New sprint "${name}" has been created in ${workspace.name}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await notification.save();
-      const populatedNotification = await notification.populate("user_id workspace_id");
-      io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+      const populatedNotification = await notification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${member.user_id}`).emit(
+        "notification:new",
+        populatedNotification
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspace_id}`).emit('sprint:created', populatedSprint);
+    io.to(`workspace-${workspace_id}`).emit("sprint:created", populatedSprint);
 
     return res.status(201).json({
       success: true,
@@ -206,8 +214,7 @@ export const createSprint = async (req, res) => {
     console.error("Error creating sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -217,7 +224,7 @@ export const updateSprint = async (req, res) => {
   try {
     const sprintId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the sprint to check workspace permissions
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -226,57 +233,56 @@ export const updateSprint = async (req, res) => {
         message: "Sprint not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(sprint.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      sprint.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to update sprints in this workspace",
+        message:
+          "You don't have permission to update sprints in this workspace",
       });
     }
-    
-    const {
-      name,
-      description,
-      start_date,
-      end_date,
-      goal,
-      status
-    } = req.body;
-    
+
+    const { name, description, start_date, end_date, goal, status } = req.body;
+
     // Keep track of whether status changed to Active
-    const statusChangedToActive = status === "Active" && sprint.status !== "Active";
-    
+    const statusChangedToActive =
+      status === "Active" && sprint.status !== "Active";
+
     // Update sprint
     const updatedSprint = await Sprint.findByIdAndUpdate(
       sprintId,
       {
         name: name || sprint.name,
-        description: description !== undefined ? description : sprint.description,
+        description:
+          description !== undefined ? description : sprint.description,
         start_date: start_date || sprint.start_date,
         end_date: end_date || sprint.end_date,
         goal: goal !== undefined ? goal : sprint.goal,
         status: status || sprint.status,
-        updated_at: new Date()
+        updated_at: new Date(),
       },
       { new: true, runValidators: true }
     )
       .populate("workspace_id")
       .populate("created_by");
-      
+
     // Handle notifications for status changes
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     // If status changed to Active, notify workspace members
     if (statusChangedToActive) {
       const workspace = await Workspace.findById(sprint.workspace_id);
-      
+
       // Notify all workspace members
       for (const member of workspace.members) {
         // Skip the current user
         if (member.user_id.toString() === userId) continue;
-        
+
         const notification = new Notification({
           user_id: member.user_id,
           type: "sprint_started",
@@ -285,23 +291,30 @@ export const updateSprint = async (req, res) => {
           content: `Sprint "${updatedSprint.name}" has started in ${workspace.name}`,
           related_id: userId,
           is_read: false,
-          created_at: new Date()
+          created_at: new Date(),
         });
-        
+
         await notification.save();
-        const populatedNotification = await notification.populate("user_id workspace_id");
-        io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+        const populatedNotification = await notification.populate(
+          "user_id workspace_id"
+        );
+        io.to(`user-${member.user_id}`).emit(
+          "notification:new",
+          populatedNotification
+        );
       }
     }
-    
+
     // If status changed to Completed, update tasks and epics status and notify
     if (status === "Completed" && sprint.status !== "Completed") {
       // Notify management members
       const workspace = await Workspace.findById(sprint.workspace_id);
       const managementMembers = workspace.members.filter(
-        member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+        (member) =>
+          ["Leader", "Manager"].includes(member.role) &&
+          member.user_id.toString() !== userId
       );
-      
+
       for (const member of managementMembers) {
         const notification = new Notification({
           user_id: member.user_id,
@@ -311,17 +324,25 @@ export const updateSprint = async (req, res) => {
           content: `Sprint "${updatedSprint.name}" has been completed in ${workspace.name}`,
           related_id: userId,
           is_read: false,
-          created_at: new Date()
+          created_at: new Date(),
         });
-        
+
         await notification.save();
-        const populatedNotification = await notification.populate("user_id workspace_id");
-        io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+        const populatedNotification = await notification.populate(
+          "user_id workspace_id"
+        );
+        io.to(`user-${member.user_id}`).emit(
+          "notification:new",
+          populatedNotification
+        );
       }
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${sprint.workspace_id}`).emit('sprint:updated', updatedSprint);
+    io.to(`workspace-${sprint.workspace_id}`).emit(
+      "sprint:updated",
+      updatedSprint
+    );
 
     return res.status(200).json({
       success: true,
@@ -331,8 +352,7 @@ export const updateSprint = async (req, res) => {
     console.error("Error updating sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -342,7 +362,7 @@ export const deleteSprint = async (req, res) => {
   try {
     const sprintId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the sprint to check workspace permissions
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -351,35 +371,41 @@ export const deleteSprint = async (req, res) => {
         message: "Sprint not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(sprint.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      sprint.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to delete sprints in this workspace",
+        message:
+          "You don't have permission to delete sprints in this workspace",
       });
     }
-    
+
     // Store sprint details before deletion for notifications
     const sprintName = sprint.name;
     const workspaceId = sprint.workspace_id;
-    
+
     // Update any tasks that reference this sprint
     await Task.updateMany({ sprint_id: sprintId }, { sprint_id: null });
-    
+
     // Delete the sprint
     await Sprint.findByIdAndDelete(sprintId);
-    
+
     // Get workspace members with Leader or Manager role
     const workspace = await Workspace.findById(workspaceId);
     const managementMembers = workspace.members.filter(
-      member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+      (member) =>
+        ["Leader", "Manager"].includes(member.role) &&
+        member.user_id.toString() !== userId
     );
-    
+
     // Notify management members
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     for (const member of managementMembers) {
       const notification = new Notification({
         user_id: member.user_id,
@@ -389,19 +415,24 @@ export const deleteSprint = async (req, res) => {
         content: `Sprint "${sprintName}" has been deleted from ${workspace.name}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await notification.save();
-      const populatedNotification = await notification.populate("user_id workspace_id");
-      io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+      const populatedNotification = await notification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${member.user_id}`).emit(
+        "notification:new",
+        populatedNotification
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspaceId}`).emit('sprint:deleted', {
+    io.to(`workspace-${workspaceId}`).emit("sprint:deleted", {
       sprintId,
       workspaceId,
-      message: `Sprint "${sprintName}" has been deleted`
+      message: `Sprint "${sprintName}" has been deleted`,
     });
 
     return res.status(200).json({
@@ -412,8 +443,7 @@ export const deleteSprint = async (req, res) => {
     console.error("Error deleting sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -424,7 +454,7 @@ export const addItems = async (req, res) => {
     const sprintId = req.params.id;
     const { tasks } = req.body;
     const userId = req.user.id;
-    
+
     // Find the sprint to check workspace permissions
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -433,31 +463,31 @@ export const addItems = async (req, res) => {
         message: "Sprint not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(sprint.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      sprint.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to modify sprints in this workspace",
+        message:
+          "You don't have permission to modify sprints in this workspace",
       });
     }
 
     // Add tasks to sprint
     if (tasks && tasks.length > 0) {
       // Update task references to this sprint
-      await Task.updateMany(
-        { _id: { $in: tasks } },
-        { sprint_id: sprintId }
-      );
-      
+      await Task.updateMany({ _id: { $in: tasks } }, { sprint_id: sprintId });
+
       // Add tasks to sprint
-      await Sprint.findByIdAndUpdate(
-        sprintId,
-        { $addToSet: { tasks: { $each: tasks } } }
-      );
+      await Sprint.findByIdAndUpdate(sprintId, {
+        $addToSet: { tasks: { $each: tasks } },
+      });
     }
-    
+
     // Get the updated sprint
     const updatedSprint = await Sprint.findById(sprintId)
       .populate("workspace_id")
@@ -466,14 +496,17 @@ export const addItems = async (req, res) => {
         path: "tasks",
         populate: [
           { path: "assigned_to", model: "User" },
-          { path: "epic_id", model: "Epic" }
-        ]
+          { path: "epic_id", model: "Epic" },
+        ],
       });
-    
+
     // Emit to workspace room for real-time updates
-    const io = req.app.get('io');
-    io.to(`workspace-${sprint.workspace_id}`).emit('sprint:updated', updatedSprint);
-    
+    const io = req.app.get("io");
+    io.to(`workspace-${sprint.workspace_id}`).emit(
+      "sprint:updated",
+      updatedSprint
+    );
+
     return res.status(200).json({
       success: true,
       data: updatedSprint,
@@ -482,8 +515,7 @@ export const addItems = async (req, res) => {
     console.error("Error adding items to sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -494,7 +526,7 @@ export const removeItems = async (req, res) => {
     const sprintId = req.params.id;
     const { tasks } = req.body;
     const userId = req.user.id;
-    
+
     // Find the sprint to check workspace permissions
     const sprint = await Sprint.findById(sprintId);
     if (!sprint) {
@@ -503,31 +535,31 @@ export const removeItems = async (req, res) => {
         message: "Sprint not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(sprint.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      sprint.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to modify sprints in this workspace",
+        message:
+          "You don't have permission to modify sprints in this workspace",
       });
     }
 
     // Remove tasks from sprint
     if (tasks && tasks.length > 0) {
       // Update task references to remove sprint
-      await Task.updateMany(
-        { _id: { $in: tasks } },
-        { sprint_id: null }
-      );
-      
+      await Task.updateMany({ _id: { $in: tasks } }, { sprint_id: null });
+
       // Remove tasks from sprint
-      await Sprint.findByIdAndUpdate(
-        sprintId,
-        { $pull: { tasks: { $in: tasks } } }
-      );
+      await Sprint.findByIdAndUpdate(sprintId, {
+        $pull: { tasks: { $in: tasks } },
+      });
     }
-    
+
     // Get the updated sprint
     const updatedSprint = await Sprint.findById(sprintId)
       .populate("workspace_id")
@@ -536,14 +568,17 @@ export const removeItems = async (req, res) => {
         path: "tasks",
         populate: [
           { path: "assigned_to", model: "User" },
-          { path: "epic_id", model: "Epic" }
-        ]
+          { path: "epic_id", model: "Epic" },
+        ],
       });
-    
+
     // Emit to workspace room for real-time updates
-    const io = req.app.get('io');
-    io.to(`workspace-${sprint.workspace_id}`).emit('sprint:updated', updatedSprint);
-    
+    const io = req.app.get("io");
+    io.to(`workspace-${sprint.workspace_id}`).emit(
+      "sprint:updated",
+      updatedSprint
+    );
+
     return res.status(200).json({
       success: true,
       data: updatedSprint,
@@ -552,8 +587,7 @@ export const removeItems = async (req, res) => {
     console.error("Error removing items from sprint:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
-}; 
+};

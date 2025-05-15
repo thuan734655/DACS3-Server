@@ -6,14 +6,14 @@ export const getAllNotifications = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    
+
     const query = { user_id: req.user.id };
-    
+
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
     }
-    
+
     // Filter by type if provided
     if (req.query.type) {
       query.type = req.query.type;
@@ -38,8 +38,7 @@ export const getAllNotifications = async (req, res) => {
     console.error("Error fetching notifications:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -47,11 +46,11 @@ export const getAllNotifications = async (req, res) => {
 // Get unread notifications
 export const getUnreadNotifications = async (req, res) => {
   try {
-    const query = { 
+    const query = {
       user_id: req.user.id,
-      is_read: false 
+      is_read: false,
     };
-    
+
     const notifications = await Notification.find(query)
       .sort({ created_at: -1 })
       .populate("user_id")
@@ -66,8 +65,7 @@ export const getUnreadNotifications = async (req, res) => {
     console.error("Error fetching unread notifications:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -85,7 +83,7 @@ export const getNotificationById = async (req, res) => {
         message: "Notification not found",
       });
     }
-    
+
     // Check if this notification belongs to the requesting user
     if (notification.user_id._id.toString() !== req.user.id) {
       return res.status(403).json({
@@ -102,8 +100,7 @@ export const getNotificationById = async (req, res) => {
     console.error("Error fetching notification:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -111,7 +108,8 @@ export const getNotificationById = async (req, res) => {
 // Create a new notification
 export const createNotification = async (req, res) => {
   try {
-    const { user_id, type, type_id, workspace_id, content, related_id } = req.body;
+    const { user_id, type, type_id, workspace_id, content, related_id } =
+      req.body;
 
     const newNotification = new Notification({
       user_id,
@@ -121,19 +119,21 @@ export const createNotification = async (req, res) => {
       content,
       related_id,
       is_read: false,
-      created_at: new Date()
+      created_at: new Date(),
     });
 
     const savedNotification = await newNotification.save();
-    
+
     // Populate the created notification
-    const populatedNotification = await Notification.findById(savedNotification._id)
+    const populatedNotification = await Notification.findById(
+      savedNotification._id
+    )
       .populate("user_id")
       .populate("workspace_id");
 
     // Emit socket event for new notification
-    const io = req.app.get('io');
-    io.to(`user-${user_id}`).emit('notification:new', populatedNotification);
+    const io = req.app.get("io");
+    io.to(`user-${user_id}`).emit("notification:new", populatedNotification);
 
     return res.status(201).json({
       success: true,
@@ -143,8 +143,7 @@ export const createNotification = async (req, res) => {
     console.error("Error creating notification:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -153,14 +152,14 @@ export const createNotification = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
-    
+
     if (!notification) {
       return res.status(404).json({
         success: false,
         message: "Notification not found",
       });
     }
-    
+
     // Check if this notification belongs to the requesting user
     if (notification.user_id.toString() !== req.user.id) {
       return res.status(403).json({
@@ -168,19 +167,22 @@ export const markAsRead = async (req, res) => {
         message: "Unauthorized: You can only modify your own notifications",
       });
     }
-    
+
     notification.is_read = true;
     await notification.save();
-    
+
     // Populate the updated notification
     const updatedNotification = await Notification.findById(req.params.id)
       .populate("user_id")
       .populate("workspace_id");
-    
+
     // Emit socket event for notification update
-    const io = req.app.get('io');
-    io.to(`user-${req.user.id}`).emit('notification:updated', updatedNotification);
-    
+    const io = req.app.get("io");
+    io.to(`user-${req.user.id}`).emit(
+      "notification:updated",
+      updatedNotification
+    );
+
     return res.status(200).json({
       success: true,
       data: updatedNotification,
@@ -189,8 +191,7 @@ export const markAsRead = async (req, res) => {
     console.error("Error marking notification as read:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -199,34 +200,33 @@ export const markAsRead = async (req, res) => {
 export const markAllAsRead = async (req, res) => {
   try {
     const { workspaceId } = req.body;
-    
+
     const query = { user_id: req.user.id, is_read: false };
-    
+
     // If workspaceId provided, only mark notifications for that workspace
     if (workspaceId) {
       query.workspace_id = workspaceId;
     }
-    
+
     await Notification.updateMany(query, { is_read: true });
-    
+
     // Emit socket event for all notifications read
-    const io = req.app.get('io');
-    io.to(`user-${req.user.id}`).emit('notification:allRead', { 
-      workspaceId: workspaceId || null 
+    const io = req.app.get("io");
+    io.to(`user-${req.user.id}`).emit("notification:allRead", {
+      workspaceId: workspaceId || null,
     });
-    
+
     return res.status(200).json({
       success: true,
-      message: workspaceId 
-        ? `All notifications for workspace ${workspaceId} marked as read` 
+      message: workspaceId
+        ? `All notifications for workspace ${workspaceId} marked as read`
         : "All notifications marked as read",
     });
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -235,14 +235,14 @@ export const markAllAsRead = async (req, res) => {
 export const deleteNotification = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
-    
+
     if (!notification) {
       return res.status(404).json({
         success: false,
         message: "Notification not found",
       });
     }
-    
+
     // Check if this notification belongs to the requesting user
     if (notification.user_id.toString() !== req.user.id) {
       return res.status(403).json({
@@ -250,18 +250,18 @@ export const deleteNotification = async (req, res) => {
         message: "Unauthorized: You can only delete your own notifications",
       });
     }
-    
+
     const notificationId = notification._id;
-    
+
     // Delete notification
     await Notification.findByIdAndDelete(req.params.id);
-    
+
     // Emit socket event for notification deletion
-    const io = req.app.get('io');
-    io.to(`user-${req.user.id}`).emit('notification:deleted', { 
-      notificationId 
+    const io = req.app.get("io");
+    io.to(`user-${req.user.id}`).emit("notification:deleted", {
+      notificationId,
     });
-    
+
     return res.status(200).json({
       success: true,
       message: "Notification deleted successfully",
@@ -270,8 +270,7 @@ export const deleteNotification = async (req, res) => {
     console.error("Error deleting notification:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
-}; 
+};

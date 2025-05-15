@@ -57,8 +57,7 @@ export const getAllReports = async (req, res) => {
     console.error("Error fetching daily reports:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -112,8 +111,7 @@ export const getMyReports = async (req, res) => {
     console.error("Error fetching user daily reports:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -122,43 +120,47 @@ export const getMyReports = async (req, res) => {
 export const getReportsByDate = async (req, res) => {
   try {
     const { date, workspace_id } = req.query;
-    
+
     if (!date) {
       return res.status(400).json({
         success: false,
         message: "Date parameter is required",
       });
     }
-    
+
     const queryDate = new Date(date);
     // Format date to remove time component (just keep year, month, day)
     queryDate.setHours(0, 0, 0, 0);
-    
+
     // Set end of day for query range
     const nextDay = new Date(queryDate);
     nextDay.setDate(nextDay.getDate() + 1);
-    
+
     const query = {
       date: {
         $gte: queryDate,
-        $lt: nextDay
-      }
+        $lt: nextDay,
+      },
     };
-    
+
     // Filter by workspace_id if provided
     if (workspace_id) {
       query.workspace_id = workspace_id;
-      
+
       // Check if user has permission in this workspace
-      const hasPermission = await checkWorkspacePermission(workspace_id, req.user.id);
+      const hasPermission = await checkWorkspacePermission(
+        workspace_id,
+        req.user.id
+      );
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: "You don't have permission to view reports in this workspace",
+          message:
+            "You don't have permission to view reports in this workspace",
         });
       }
     }
-    
+
     const reports = await ReportDaily.find(query)
       .populate("user_id")
       .populate("workspace_id")
@@ -171,14 +173,13 @@ export const getReportsByDate = async (req, res) => {
       success: true,
       count: reports.length,
       data: reports,
-      date: queryDate.toISOString().split('T')[0]
+      date: queryDate.toISOString().split("T")[0],
     });
   } catch (error) {
     console.error("Error fetching reports by date:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -223,8 +224,7 @@ export const getReportById = async (req, res) => {
     console.error("Error fetching daily report:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -424,8 +424,7 @@ export const createOrUpdateReport = async (req, res) => {
     console.error("Error creating/updating daily report:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -508,8 +507,7 @@ export const deleteReport = async (req, res) => {
     console.error("Error deleting daily report:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };

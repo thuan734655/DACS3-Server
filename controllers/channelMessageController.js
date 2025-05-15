@@ -70,8 +70,7 @@ export const getChannelMessages = async (req, res) => {
     console.error("Error fetching channel messages:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -149,8 +148,7 @@ export const sendChannelMessage = async (req, res) => {
     console.error("Error sending channel message:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -259,8 +257,7 @@ export const replyToChannelThread = async (req, res) => {
     console.error("Error replying to thread in channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -338,8 +335,7 @@ export const getChannelThreadReplies = async (req, res) => {
     console.error("Error fetching thread replies in channel:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message
+      message: error.message
     });
   }
 }; 

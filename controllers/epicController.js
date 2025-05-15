@@ -3,31 +3,30 @@ import Workspace from "../models/model_database/workspaces.js";
 import Notification from "../models/model_database/notifications.js";
 import { checkWorkspacePermission } from "../helper/checkRole.js";
 
-
 // Get all epics with pagination and filtering
 export const getAllEpics = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    
+
     const query = {};
-    
+
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
     }
-    
+
     // Filter by status if provided
     if (req.query.status) {
       query.status = req.query.status;
     }
-    
+
     // Filter by assigned_to if provided
     if (req.query.assigned_to) {
       query.assigned_to = req.query.assigned_to;
     }
-    
+
     // Filter by sprint_id if provided
     if (req.query.sprint_id) {
       query.sprint_id = req.query.sprint_id;
@@ -54,8 +53,7 @@ export const getAllEpics = async (req, res) => {
     console.error("Error fetching epics:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -72,8 +70,8 @@ export const getEpicById = async (req, res) => {
         path: "tasks",
         populate: {
           path: "assigned_to",
-          model: "User"
-        }
+          model: "User",
+        },
       });
 
     if (!epic) {
@@ -91,8 +89,7 @@ export const getEpicById = async (req, res) => {
     console.error("Error fetching epic:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -109,7 +106,7 @@ export const createEpic = async (req, res) => {
       priority,
       start_date,
       due_date,
-      sprint_id
+      sprint_id,
     } = req.body;
 
     const userId = req.user.id;
@@ -135,11 +132,11 @@ export const createEpic = async (req, res) => {
       due_date: due_date || null,
       sprint_id: sprint_id || null,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     const savedEpic = await newEpic.save();
-    
+
     // Populate the created epic
     const populatedEpic = await Epic.findById(savedEpic._id)
       .populate("workspace_id")
@@ -157,25 +154,30 @@ export const createEpic = async (req, res) => {
         content: `You have been assigned to epic "${title}"`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assignNotification.save();
-      
+
       // Emit socket event for notification
-      const io = req.app.get('io');
-      io.to(`user-${assigned_to}`).emit('notification:new', await assignNotification.populate("user_id workspace_id"));
+      const io = req.app.get("io");
+      io.to(`user-${assigned_to}`).emit(
+        "notification:new",
+        await assignNotification.populate("user_id workspace_id")
+      );
     }
 
     // Get workspace members with Leader or Manager role
     const workspace = await Workspace.findById(workspace_id);
     const managementMembers = workspace.members.filter(
-      member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+      (member) =>
+        ["Leader", "Manager"].includes(member.role) &&
+        member.user_id.toString() !== userId
     );
-    
+
     // Notify management members
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     for (const member of managementMembers) {
       const notification = new Notification({
         user_id: member.user_id,
@@ -185,16 +187,21 @@ export const createEpic = async (req, res) => {
         content: `New epic "${title}" has been created in ${workspace.name}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await notification.save();
-      const populatedNotification = await notification.populate("user_id workspace_id");
-      io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+      const populatedNotification = await notification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${member.user_id}`).emit(
+        "notification:new",
+        populatedNotification
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspace_id}`).emit('epic:created', populatedEpic);
+    io.to(`workspace-${workspace_id}`).emit("epic:created", populatedEpic);
 
     return res.status(201).json({
       success: true,
@@ -204,8 +211,7 @@ export const createEpic = async (req, res) => {
     console.error("Error creating epic:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -215,7 +221,7 @@ export const updateEpic = async (req, res) => {
   try {
     const epicId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the epic to check workspace permissions
     const epic = await Epic.findById(epicId);
     if (!epic) {
@@ -224,16 +230,19 @@ export const updateEpic = async (req, res) => {
         message: "Epic not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(epic.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      epic.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
         message: "You don't have permission to update epics in this workspace",
       });
     }
-    
+
     const {
       title,
       description,
@@ -243,14 +252,16 @@ export const updateEpic = async (req, res) => {
       start_date,
       due_date,
       completed_date,
-      sprint_id
+      sprint_id,
     } = req.body;
-    
+
     // Keep track of whether assignment changed
-    const assignmentChanged = assigned_to && epic.assigned_to && 
-                             assigned_to.toString() !== epic.assigned_to.toString();
+    const assignmentChanged =
+      assigned_to &&
+      epic.assigned_to &&
+      assigned_to.toString() !== epic.assigned_to.toString();
     const previousAssignee = epic.assigned_to;
-    
+
     // Update epic
     const updatedEpic = await Epic.findByIdAndUpdate(
       epicId,
@@ -264,7 +275,7 @@ export const updateEpic = async (req, res) => {
         due_date: due_date || epic.due_date,
         completed_date: completed_date || epic.completed_date,
         sprint_id: sprint_id || epic.sprint_id,
-        updated_at: new Date()
+        updated_at: new Date(),
       },
       { new: true, runValidators: true }
     )
@@ -272,10 +283,10 @@ export const updateEpic = async (req, res) => {
       .populate("created_by")
       .populate("assigned_to")
       .populate("sprint_id");
-      
+
     // Handle notifications for assignment changes
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     // If assigned user changed, notify the new assignee
     if (assignmentChanged) {
       // Notify new assignee
@@ -287,12 +298,15 @@ export const updateEpic = async (req, res) => {
         content: `You have been assigned to epic "${updatedEpic.title}"`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assignNotification.save();
-      io.to(`user-${assigned_to}`).emit('notification:new', await assignNotification.populate("user_id workspace_id"));
-      
+      io.to(`user-${assigned_to}`).emit(
+        "notification:new",
+        await assignNotification.populate("user_id workspace_id")
+      );
+
       // Notify previous assignee
       if (previousAssignee) {
         const unassignNotification = new Notification({
@@ -303,16 +317,19 @@ export const updateEpic = async (req, res) => {
           content: `You have been unassigned from epic "${updatedEpic.title}"`,
           related_id: userId,
           is_read: false,
-          created_at: new Date()
+          created_at: new Date(),
         });
-        
+
         await unassignNotification.save();
-        io.to(`user-${previousAssignee}`).emit('notification:new', await unassignNotification.populate("user_id workspace_id"));
+        io.to(`user-${previousAssignee}`).emit(
+          "notification:new",
+          await unassignNotification.populate("user_id workspace_id")
+        );
       }
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${epic.workspace_id}`).emit('epic:updated', updatedEpic);
+    io.to(`workspace-${epic.workspace_id}`).emit("epic:updated", updatedEpic);
 
     return res.status(200).json({
       success: true,
@@ -322,8 +339,7 @@ export const updateEpic = async (req, res) => {
     console.error("Error updating epic:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -333,7 +349,7 @@ export const deleteEpic = async (req, res) => {
   try {
     const epicId = req.params.id;
     const userId = req.user.id;
-    
+
     // Find the epic to check workspace permissions
     const epic = await Epic.findById(epicId);
     if (!epic) {
@@ -342,32 +358,37 @@ export const deleteEpic = async (req, res) => {
         message: "Epic not found",
       });
     }
-    
+
     // Check if user has permission in this workspace
-    const hasPermission = await checkWorkspacePermission(epic.workspace_id, userId);
+    const hasPermission = await checkWorkspacePermission(
+      epic.workspace_id,
+      userId
+    );
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
         message: "You don't have permission to delete epics in this workspace",
       });
     }
-    
+
     // Store epic details before deletion for notifications
     const epicTitle = epic.title;
     const workspaceId = epic.workspace_id;
-    
+
     // Delete the epic
     await Epic.findByIdAndDelete(epicId);
-    
+
     // Get workspace members with Leader or Manager role
     const workspace = await Workspace.findById(workspaceId);
     const managementMembers = workspace.members.filter(
-      member => ['Leader', 'Manager'].includes(member.role) && member.user_id.toString() !== userId
+      (member) =>
+        ["Leader", "Manager"].includes(member.role) &&
+        member.user_id.toString() !== userId
     );
-    
+
     // Notify management members
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     for (const member of managementMembers) {
       const notification = new Notification({
         user_id: member.user_id,
@@ -377,14 +398,19 @@ export const deleteEpic = async (req, res) => {
         content: `Epic "${epicTitle}" has been deleted from ${workspace.name}`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await notification.save();
-      const populatedNotification = await notification.populate("user_id workspace_id");
-      io.to(`user-${member.user_id}`).emit('notification:new', populatedNotification);
+      const populatedNotification = await notification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${member.user_id}`).emit(
+        "notification:new",
+        populatedNotification
+      );
     }
-    
+
     // If epic was assigned to someone, notify them
     if (epic.assigned_to && epic.assigned_to.toString() !== userId) {
       const assigneeNotification = new Notification({
@@ -395,18 +421,21 @@ export const deleteEpic = async (req, res) => {
         content: `Epic "${epicTitle}" that was assigned to you has been deleted`,
         related_id: userId,
         is_read: false,
-        created_at: new Date()
+        created_at: new Date(),
       });
-      
+
       await assigneeNotification.save();
-      io.to(`user-${epic.assigned_to}`).emit('notification:new', await assigneeNotification.populate("user_id workspace_id"));
+      io.to(`user-${epic.assigned_to}`).emit(
+        "notification:new",
+        await assigneeNotification.populate("user_id workspace_id")
+      );
     }
-    
+
     // Emit to workspace room for real-time updates
-    io.to(`workspace-${workspaceId}`).emit('epic:deleted', {
+    io.to(`workspace-${workspaceId}`).emit("epic:deleted", {
       epicId,
       workspaceId,
-      message: `Epic "${epicTitle}" has been deleted`
+      message: `Epic "${epicTitle}" has been deleted`,
     });
 
     return res.status(200).json({
@@ -417,8 +446,7 @@ export const deleteEpic = async (req, res) => {
     console.error("Error deleting epic:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
-}; 
+};

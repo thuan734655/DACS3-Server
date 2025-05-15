@@ -7,21 +7,29 @@ export const getAllMessages = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     const query = {};
-    
+
     // Filter by channel_id if provided
     if (req.query.channel_id) {
       query.channel_id = req.query.channel_id;
       query.type_message = "channel";
     }
-    
+
     // Filter by direct message participants if provided
     if (req.query.sender_id && req.query.receiver_id) {
       // For direct messages, we need to find messages where the user is either sender or receiver
       query.$or = [
-        { sender_id: req.query.sender_id, reciver_id: req.query.receiver_id, type_message: "direct" },
-        { sender_id: req.query.receiver_id, reciver_id: req.query.sender_id, type_message: "direct" }
+        {
+          sender_id: req.query.sender_id,
+          reciver_id: req.query.receiver_id,
+          type_message: "direct",
+        },
+        {
+          sender_id: req.query.receiver_id,
+          reciver_id: req.query.sender_id,
+          type_message: "direct",
+        },
       ];
     }
 
@@ -32,7 +40,7 @@ export const getAllMessages = async (req, res) => {
       // By default, get only top-level messages (not thread replies)
       query.thread_parent_id = null;
     }
-    
+
     // Sort by created_at descending (newest first)
     const messages = await Message.find(query)
       .sort({ created_at: -1 })
@@ -41,7 +49,7 @@ export const getAllMessages = async (req, res) => {
       .populate("channel_id")
       .skip(skip)
       .limit(limit);
-    
+
     // Reverse the array to have oldest messages first (better for chat UI)
     messages.reverse();
 
@@ -57,8 +65,7 @@ export const getAllMessages = async (req, res) => {
     console.error("Error fetching messages:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -86,8 +93,7 @@ export const getMessageById = async (req, res) => {
     console.error("Error fetching message:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -95,15 +101,15 @@ export const getMessageById = async (req, res) => {
 // Create a new message
 export const createMessage = async (req, res) => {
   try {
-    const { 
-      type_message, 
-      reciver_id, 
-      channel_id, 
-      sender_id, 
+    const {
+      type_message,
+      reciver_id,
+      channel_id,
+      sender_id,
       content,
       type,
       file_url,
-      thread_parent_id
+      thread_parent_id,
     } = req.body;
 
     // Validate message type
@@ -129,11 +135,11 @@ export const createMessage = async (req, res) => {
       content,
       type: type || "text",
       file_url,
-      thread_parent_id
+      thread_parent_id,
     });
 
     const savedMessage = await newMessage.save();
-    
+
     // Populate the created message
     const populatedMessage = await Message.findById(savedMessage._id)
       .populate("sender_id")
@@ -144,28 +150,35 @@ export const createMessage = async (req, res) => {
     if (type_message === "channel") {
       await Channel.findByIdAndUpdate(channel_id, {
         last_message_id: savedMessage._id,
-        last_message_preview: content ? 
-          (content.length > 50 ? content.substring(0, 50) + "..." : content) : 
-          (type === "image" ? "Shared an image" : "New message"),
-        last_message_at: new Date()
+        last_message_preview: content
+          ? content.length > 50
+            ? content.substring(0, 50) + "..."
+            : content
+          : type === "image"
+          ? "Shared an image"
+          : "New message",
+        last_message_at: new Date(),
       });
     }
 
     // Emit socket event for new message
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     if (type_message === "channel") {
       // Emit to channel room
-      io.to(`channel-${channel_id}`).emit('message:created', populatedMessage);
+      io.to(`channel-${channel_id}`).emit("message:created", populatedMessage);
     } else if (type_message === "direct") {
       // Emit to both sender and receiver
-      io.to(`user-${sender_id}`).emit('message:created', populatedMessage);
-      io.to(`user-${reciver_id}`).emit('message:created', populatedMessage);
+      io.to(`user-${sender_id}`).emit("message:created", populatedMessage);
+      io.to(`user-${reciver_id}`).emit("message:created", populatedMessage);
     }
-    
+
     // If it's a thread reply, also notify the thread participants
     if (thread_parent_id) {
-      io.to(`thread-${thread_parent_id}`).emit('thread:reply', populatedMessage);
+      io.to(`thread-${thread_parent_id}`).emit(
+        "thread:reply",
+        populatedMessage
+      );
     }
 
     return res.status(201).json({
@@ -176,8 +189,7 @@ export const createMessage = async (req, res) => {
     console.error("Error creating message:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -188,14 +200,14 @@ export const updateMessage = async (req, res) => {
     const { content } = req.body;
 
     const message = await Message.findById(req.params.id);
-    
+
     if (!message) {
       return res.status(404).json({
         success: false,
         message: "Message not found",
       });
     }
-    
+
     // Only the sender should be able to edit their message
     if (message.sender_id.toString() !== req.user.id) {
       return res.status(403).json({
@@ -217,20 +229,32 @@ export const updateMessage = async (req, res) => {
       .populate("channel_id");
 
     // Emit socket event for message update
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     if (message.type_message === "channel") {
       // Emit to channel room
-      io.to(`channel-${message.channel_id}`).emit('message:updated', updatedMessage);
+      io.to(`channel-${message.channel_id}`).emit(
+        "message:updated",
+        updatedMessage
+      );
     } else if (message.type_message === "direct") {
       // Emit to both sender and receiver
-      io.to(`user-${message.sender_id}`).emit('message:updated', updatedMessage);
-      io.to(`user-${message.reciver_id}`).emit('message:updated', updatedMessage);
+      io.to(`user-${message.sender_id}`).emit(
+        "message:updated",
+        updatedMessage
+      );
+      io.to(`user-${message.reciver_id}`).emit(
+        "message:updated",
+        updatedMessage
+      );
     }
-    
+
     // If it's a thread message, also notify the thread
     if (message.thread_parent_id) {
-      io.to(`thread-${message.thread_parent_id}`).emit('thread:updated', updatedMessage);
+      io.to(`thread-${message.thread_parent_id}`).emit(
+        "thread:updated",
+        updatedMessage
+      );
     }
 
     return res.status(200).json({
@@ -241,8 +265,7 @@ export const updateMessage = async (req, res) => {
     console.error("Error updating message:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -251,14 +274,14 @@ export const updateMessage = async (req, res) => {
 export const deleteMessage = async (req, res) => {
   try {
     const message = await Message.findById(req.params.id);
-    
+
     if (!message) {
       return res.status(404).json({
         success: false,
         message: "Message not found",
       });
     }
-    
+
     // Only the sender should be able to delete their message
     if (message.sender_id.toString() !== req.user.id) {
       return res.status(403).json({
@@ -266,7 +289,7 @@ export const deleteMessage = async (req, res) => {
         message: "Unauthorized: You can only delete your own messages",
       });
     }
-    
+
     // Store message details for notification before deletion
     const messageId = message._id;
     const channelId = message.channel_id;
@@ -274,25 +297,27 @@ export const deleteMessage = async (req, res) => {
     const receiverId = message.reciver_id;
     const threadParentId = message.thread_parent_id;
     const typeMessage = message.type_message;
-    
+
     // Delete the message
     await Message.findByIdAndDelete(req.params.id);
 
     // Emit socket event for message deletion
-    const io = req.app.get('io');
-    
+    const io = req.app.get("io");
+
     if (typeMessage === "channel") {
       // Emit to channel room
-      io.to(`channel-${channelId}`).emit('message:deleted', { messageId });
+      io.to(`channel-${channelId}`).emit("message:deleted", { messageId });
     } else if (typeMessage === "direct") {
       // Emit to both sender and receiver
-      io.to(`user-${senderId}`).emit('message:deleted', { messageId });
-      io.to(`user-${receiverId}`).emit('message:deleted', { messageId });
+      io.to(`user-${senderId}`).emit("message:deleted", { messageId });
+      io.to(`user-${receiverId}`).emit("message:deleted", { messageId });
     }
-    
+
     // If it's a thread message, also notify the thread
     if (threadParentId) {
-      io.to(`thread-${threadParentId}`).emit('thread:messageDeleted', { messageId });
+      io.to(`thread-${threadParentId}`).emit("thread:messageDeleted", {
+        messageId,
+      });
     }
 
     return res.status(200).json({
@@ -303,8 +328,7 @@ export const deleteMessage = async (req, res) => {
     console.error("Error deleting message:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -316,15 +340,15 @@ export const getThreadReplies = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     const replies = await Message.find({ thread_parent_id: parentId })
       .sort({ created_at: 1 })
       .populate("sender_id")
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Message.countDocuments({ thread_parent_id: parentId });
-    
+
     return res.status(200).json({
       success: true,
       count: replies.length,
@@ -335,8 +359,7 @@ export const getThreadReplies = async (req, res) => {
     console.error("Error fetching thread replies:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message,
     });
   }
-}; 
+};
