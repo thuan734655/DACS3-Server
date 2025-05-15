@@ -25,11 +25,6 @@ const invitationSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  channel_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Channel",
-    required: false,
-  },
   email: {
     type: String,
     required: true,

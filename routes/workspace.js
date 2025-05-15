@@ -11,7 +11,7 @@ import {
   getAllWorkspacesByUserId
 } from "../controllers/workspaceController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
-
+  
 const router = express.Router();
 
 // Apply authenticateToken middleware to all routes

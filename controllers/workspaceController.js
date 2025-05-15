@@ -127,10 +127,6 @@ export const createWorkspace = async (req, res) => {
       .populate("created_by")
       .populate("members.user_id");
 
-    // Emit socket event for workspace creation
-    const io = req.app.get("io");
-    io.to(`user-${created_by}`).emit("workspace:created", populatedWorkspace);
-
     return res.status(201).json({
       success: true,
       data: populatedWorkspace,

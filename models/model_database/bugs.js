@@ -34,51 +34,35 @@ const bugSchema = new mongoose.Schema({
     enum: ["Open", "In Progress", "Fixed", "Rejected", "Closed"],
     default: "Open",
   },
-  severity: {
+  completed_date: {
+    type: Date,
+  },
+  priority: {
     type: String,
-    enum: ["Low", "Medium", "High", "Critical"],
+    enum: ["Low", "Medium", "High"],
     default: "Medium",
   },
-  steps_to_reproduce: {
-    type: String,
-  },
-  expected_behavior: {
-    type: String,
-  },
-  actual_behavior: {
-    type: String,
-  },
-  comments: [{
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
+  comments: [
+    {
+      user_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      content: {
+        type: String,
+        required: true,
+      },
+      created_at: {
+        type: Date,
+        default: Date.now,
+      },
+      updated_at: {
+        type: Date,
+        default: Date.now,
+      },
     },
-    content: {
-      type: String,
-      required: true
-    },
-    created_at: {
-      type: Date,
-      default: Date.now
-    },
-    updated_at: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  attachments: [{
-    file_name: String,
-    file_url: String,
-    uploaded_by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
-    },
-    uploaded_at: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  ],
   created_at: {
     type: Date,
     default: Date.now,
@@ -86,7 +70,7 @@ const bugSchema = new mongoose.Schema({
   updated_at: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
 const Bug = mongoose.model("Bug", bugSchema);

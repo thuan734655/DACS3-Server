@@ -1,58 +1,92 @@
 import mongoose from "mongoose";
 import connectDB from "../../config/connectDB.js";
-import e from "express";
 
 connectDB();
 
-const reportSchema = new mongoose.Schema({
+const reportDailySchema = new mongoose.Schema({
   user_id: {
-    type: "ObjectId",
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
   workspace_id: {
-    type: "ObjectId",
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Workspace",
     required: true,
   },
   date: {
-    type: "Date",
+    type: Date,
     required: true,
+    default: Date.now,
   },
-  content: {
-    type: "String",
-    required: true,
+  completed_tasks: [{
+    task_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+      required: true
+    },
+    notes: String,
+    spent_hours: {
+      type: Number,
+      default: 0
+    }
+  }],
+  in_progress_tasks: [{
+    task_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+      required: true
+    },
+    notes: String,
+    spent_hours: {
+      type: Number,
+      default: 0
+    },
+    progress_percentage: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0
+    }
+  }],
+  planned_tasks: [{
+    task_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+      required: true
+    },
+    notes: String,
+    estimated_hours: {
+      type: Number,
+      default: 0
+    }
+  }],
+  issues: [{
+    description: {
+      type: String,
+      required: true
+    },
+    is_blocking: {
+      type: Boolean,
+      default: false
+    }
+  }],
+  general_notes: {
+    type: String
   },
-  inprogress: [
-    {
-      issue: {
-        type: "String",
-        enum: [("task", "bug")],
-        required: false,
-      },
-      progress: {
-        type: "Number",
-        required: false,
-        default: 0,
-      },
-    },
-  ],
-  completed: [
-    {
-      issue: {
-        type: "String",
-        enum: [("task", "bug")],
-        required: false,
-      },
-    },
-  ],
-
   created_at: {
-    type: "Date",
-    default: "Date.now",
+    type: Date,
+    default: Date.now
   },
+  updated_at: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-const ReportDaily = mongoose.model("ReportDaily", reportSchema);
+// Create a compound index to ensure one daily report per user per workspace per date
+reportDailySchema.index({ user_id: 1, workspace_id: 1, date: 1 }, { unique: true });
 
-export default ReportDaily;
+const ReportDaily = mongoose.model("ReportDaily", reportDailySchema);
+
+export default ReportDaily; 
