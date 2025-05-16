@@ -12,37 +12,46 @@ export const getAllTasks = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const query = {};
+    let isFilter = false;
 
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
+      isFilter = true;
     }
 
     // Filter by epic_id if provided
     if (req.query.epic_id) {
       query.epic_id = req.query.epic_id;
+      isFilter = true;
     }
 
     // Filter by status if provided
     if (req.query.status) {
       query.status = req.query.status;
+      isFilter = true;
     }
 
     // Filter by assigned_to if provided
     if (req.query.assigned_to) {
       query.assigned_to = req.query.assigned_to;
+      isFilter = true;
     }
 
     // Filter by sprint_id if provided
     if (req.query.sprint_id) {
       query.sprint_id = req.query.sprint_id;
+      isFilter = true;
     }
 
     // Filter by priority if provided
     if (req.query.priority) {
       query.priority = req.query.priority;
+      isFilter = true;
     }
-
+    if (!isFilter) {
+      query.created_by = req.user.id;
+    }
     const tasks = await Task.find(query)
       .populate("workspace_id")
       .populate("epic_id")
