@@ -4,9 +4,10 @@ const resendOTP = async (req, res) => {
   const { email } = req.body;
   try {
     sendOTP(email, false);
-    
+
     res.status(200).json({
       message: "OTP has been resent to your email",
+      success: true,
       action: "enter_otp",
       data: { email },
     });

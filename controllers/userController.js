@@ -75,18 +75,22 @@ export const createUser = async (req, res) => {
 };
 
 // Update a user
+// Update a user
 export const updateUser = async (req, res) => {
   try {
-    const { name, avatar } = req.body;
+    const userId = req.user.id || req.params.id;
+    const { name } = req.body;
+    const updateData = { name };
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        avatar,
-      },
-      { new: true, runValidators: true }
-    );
+    // Add avatar path if a new image was uploaded
+    if (req.file) {
+      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({
@@ -131,4 +135,4 @@ export const deleteUser = async (req, res) => {
       message: error.message,
     });
   }
-}; 
+};

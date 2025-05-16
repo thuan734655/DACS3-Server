@@ -48,6 +48,7 @@ export const getAllWorkspaces = async (req, res) => {
 // Get all workspaces by user ID
 export const getAllWorkspacesByUserId = async (req, res) => {
   try {
+    console.log("Fetching workspaces for user ID:", req.user.id);
     const userId = req.params.userId || req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -110,8 +111,9 @@ export const getWorkspaceById = async (req, res) => {
 
 // Create a new workspace
 export const createWorkspace = async (req, res) => {
+  const created_by = req.user.id;
   try {
-    const { name, description, created_by } = req.body;
+    const { name, description } = req.body;
 
     const newWorkspace = new Workspace({
       name,

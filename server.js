@@ -19,6 +19,7 @@ import { socketAuth } from "./middlewares/socketAuth.js";
 import http from "http";
 import { Server } from "socket.io";
 import notificationRoutes from "./routes/notification.js";
+import path from "path";
 
 dotenv.config();
 
@@ -55,6 +56,8 @@ const io = new Server(server, {
 
 // Make io instance available to routes
 app.set("io", io);
+
+app.use("/public", express.static(path.join(process.cwd(), "public")));
 
 // Socket.IO middleware
 io.use(socketAuth);

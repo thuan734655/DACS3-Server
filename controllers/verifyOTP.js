@@ -22,7 +22,9 @@ const verifyOTPController = async (req, res) => {
         data: { email },
       });
     }
-    res.status(200).json({ message: "OTP verified successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "OTP verified successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

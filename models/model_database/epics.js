@@ -27,12 +27,12 @@ const epicSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Todo", "In Progress", "Done"],
+    enum: ["TO_DO", "IN_PROGRESS", "DONE"],
     default: "Todo",
   },
   priority: {
     type: String,
-    enum: ["Low", "Medium", "High", "Critical"],
+    enum: ["Low", "Medium", "High"],
     default: "Medium",
   },
   start_date: {
@@ -48,10 +48,12 @@ const epicSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Sprint",
   },
-  tasks: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Task"
-  }],
+  tasks: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+    },
+  ],
   created_at: {
     type: Date,
     default: Date.now,
@@ -59,7 +61,7 @@ const epicSchema = new mongoose.Schema({
   updated_at: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
 const Epic = mongoose.model("Epic", epicSchema);

@@ -8,20 +8,19 @@ import {
   addMember,
   removeMember,
   leaveWorkspace,
-  getAllWorkspacesByUserId
+  getAllWorkspacesByUserId,
 } from "../controllers/workspaceController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
-  
+
 const router = express.Router();
 
 // Apply authenticateToken middleware to all routes
 router.use(authenticateToken);
 
-// GET all workspaces with pagination
-router.get("/", getAllWorkspaces);
+router.get("/", getAllWorkspacesByUserId);
 
-// GET all workspaces for a user
-router.get("/user/:userId?", getAllWorkspacesByUserId);
+// // GET all workspaces for a user
+// router.get("/user/:userId?", getAllWorkspacesByUserId);
 
 // GET workspace by ID
 router.get("/:id", getWorkspaceById);
@@ -44,4 +43,4 @@ router.delete("/:id/members/:userId", removeMember);
 // DELETE leave a workspace (self-leave)
 router.delete("/:id/leave", leaveWorkspace);
 
-export default router; 
+export default router;

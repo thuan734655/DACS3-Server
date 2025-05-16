@@ -7,25 +7,20 @@ import {
   deleteUser,
 } from "../controllers/userController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
+import upload from "../middlewares/multerConfig.js";
 
 const router = express.Router();
 
-// Apply verifyToken middleware to all routes
 router.use(authenticateToken);
 
-// GET all users with pagination
 router.get("/", getAllUsers);
 
-// GET user by ID
 router.get("/:id", getUserById);
 
-// POST create new user
 router.post("/", createUser);
 
-// PUT update user
-router.put("/:id", updateUser);
+router.put('/:id', upload.single('avatar'), updateUser);
 
-// DELETE user
 router.delete("/:id", deleteUser);
 
 export default router; 
