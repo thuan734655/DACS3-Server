@@ -23,8 +23,8 @@ const sprintSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Planned", "Active", "Completed"],
-    default: "Planned",
+    enum: ["TO_DO", "IN_PROGRESS", "DONE"],
+    default: "TO_DO",
   },
   start_date: {
     type: Date,
@@ -37,10 +37,12 @@ const sprintSchema = new mongoose.Schema({
   goal: {
     type: String,
   },
-  tasks: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Task"
-  }],
+  tasks: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+    },
+  ],
   created_at: {
     type: Date,
     default: Date.now,
@@ -48,7 +50,7 @@ const sprintSchema = new mongoose.Schema({
   updated_at: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
 const Sprint = mongoose.model("Sprint", sprintSchema);
