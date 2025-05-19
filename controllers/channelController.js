@@ -16,6 +16,7 @@ export const getAllChannels = async (req, res) => {
       query.workspace_id = req.query.workspace_id;
     }
 
+    console.log("Query:", query);
     const channels = await Channel.find(query)
       .populate("workspace_id")
       .populate("created_by")
@@ -25,6 +26,7 @@ export const getAllChannels = async (req, res) => {
       .limit(limit);
 
     const total = await Channel.countDocuments(query);
+    console.log("Total channels:", channels);
 
     return res.status(200).json({
       success: true,
@@ -75,9 +77,12 @@ export const createChannel = async (req, res) => {
   try {
     const { name, description, workspace_id, created_by, is_private } =
       req.body;
+    console.log("Request body:", req.body);
 
     // Verify workspace exists
     const workspace = await Workspace.findById(workspace_id);
+
+    console.log("Workspace:", workspace);
     if (!workspace) {
       return res.status(404).json({
         success: false,
@@ -127,7 +132,7 @@ export const createChannel = async (req, res) => {
     const notificationPromises = membersToNotify.map(async (member) => {
       const newNotification = new Notification({
         user_id: member.user_id,
-        type: "channel_created",
+        type: "channel",
         type_id: savedChannel._id,
         workspace_id: workspace_id,
         content: `New channel "${name}" was created in workspace "${workspace.name}"`,

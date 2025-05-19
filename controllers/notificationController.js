@@ -1,4 +1,5 @@
 import Notification from "../models/model_database/notifications.js";
+import mongoose from "mongoose";
 
 // Get all notifications with pagination and filtering
 export const getAllNotifications = async (req, res) => {
@@ -36,6 +37,111 @@ export const getAllNotifications = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching notifications:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get notifications by user ID with pagination
+export const getNotificationsByUserId = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Validate that userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID format",
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = { user_id: userId };
+
+    // Filter by type if provided
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("user_id")
+      .populate("workspace_id");
+
+    const total = await Notification.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      count: notifications.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: notifications,
+    });
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get notifications by workspace ID with pagination
+export const getNotificationsByWorkspaceId = async (req, res) => {
+  try {
+    const workspaceId = req.params.workspaceId;
+
+    // Validate that workspaceId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workspace ID format",
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = { workspace_id: workspaceId };
+
+    // Filter by type if provided
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    // Filter by user_id if provided
+    if (req.query.user_id) {
+      query.user_id = req.query.user_id;
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("user_id")
+      .populate("workspace_id");
+
+    const total = await Notification.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      count: notifications.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: notifications,
+    });
+  } catch (error) {
+    console.error("Error fetching workspace notifications:", error);
     return res.status(500).json({
       success: false,
       message: error.message,

@@ -6,7 +6,9 @@ import {
   createNotification,
   markAsRead,
   markAllAsRead,
-  deleteNotification
+  deleteNotification,
+  getNotificationsByUserId,
+  getNotificationsByWorkspaceId
 } from "../controllers/notificationController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 
@@ -20,6 +22,13 @@ router.get("/", getAllNotifications);
 
 // GET unread notifications
 router.get("/unread", getUnreadNotifications);
+
+// GET notifications by user ID with pagination
+router.get("/user/:userId", getNotificationsByUserId);
+
+
+// GET notifications by workspace ID with pagination
+router.get("/workspace/:workspaceId", getNotificationsByWorkspaceId);
 
 // GET notification by ID
 router.get("/:id", getNotificationById);

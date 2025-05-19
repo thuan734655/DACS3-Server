@@ -13,6 +13,7 @@ import epicRoutes from "./routes/epics.js";
 import taskRoutes from "./routes/tasks.js";
 import sprintRoutes from "./routes/sprints.js";
 import bugRoutes from "./routes/bugs.js";
+import invitationRoutes from "./routes/invitation.js";
 import reportDailyRoutes from "./routes/reportDailies.js";
 import initSocket from "./sockets/socketHandler.js";
 import { socketAuth } from "./middlewares/socketAuth.js";
@@ -41,6 +42,7 @@ app.use("/api/sprints", sprintRoutes);
 app.use("/api/bugs", bugRoutes);
 app.use("/api/reports", reportDailyRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/invitations", invitationRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);

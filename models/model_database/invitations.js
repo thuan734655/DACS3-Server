@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import connectDB from "../../config/connectDB.js";
-import { type } from "os";
 
 connectDB();
 

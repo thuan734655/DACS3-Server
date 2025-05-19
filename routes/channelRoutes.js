@@ -8,40 +8,37 @@ import {
   addMember,
   removeMember,
   joinChannel,
-  leaveChannel
+  leaveChannel,
 } from "../controllers/channelController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 
-
 const router = express.Router();
-
-router.use(authenticateToken);
 
 // GET all channels with pagination
 router.get("/", getAllChannels);
 
 // GET channel by ID
-router.get("/:id", getChannelById);
+router.get("/:id", authenticateToken, getChannelById);
 
 // POST create new channel
-router.post("/", createChannel);
+router.post("/", authenticateToken, createChannel);
 
 // PUT update channel
-router.put("/:id", updateChannel);
+router.put("/:id", authenticateToken, updateChannel);
 
 // DELETE channel
-router.delete("/:id", deleteChannel);
+router.delete("/:id", authenticateToken, deleteChannel);
 
 // PUT add member to channel (by admin/owner)
-router.put("/:id/members", addMember);
+router.put("/:id/members", authenticateToken, addMember);
 
 // DELETE remove member from channel (by admin/owner)
-router.delete("/:id/members/:userId", removeMember);
+router.delete("/:id/members/:userId", authenticateToken, removeMember);
 
 // POST join a channel (self-join)
-router.post("/:id/join", joinChannel);
+router.post("/:id/join", authenticateToken, joinChannel);
 
 // DELETE leave a channel (self-leave)
-router.delete("/:id/leave", leaveChannel);
+router.delete("/:id/leave", authenticateToken, leaveChannel);
 
-export default router; 
+export default router;

@@ -1,5 +1,9 @@
 import Workspace from "../models/model_database/workspaces.js";
 import Notification from "../models/model_database/notifications.js";
+import Epic from "../models/model_database/epics.js";
+import Task from "../models/model_database/tasks.js";
+import Sprint from "../models/model_database/sprints.js";
+import Bug from "../models/model_database/bugs.js";
 import mongoose from "mongoose";
 
 // Helper function to check if user has specific roles in workspace
@@ -85,7 +89,8 @@ export const getAllWorkspacesByUserId = async (req, res) => {
 // Get workspace by ID
 export const getWorkspaceById = async (req, res) => {
   try {
-    const workspace = await Workspace.findById(req.params.id)
+    const workspaceId = req.params.id;
+    const workspace = await Workspace.findById(workspaceId)
       .populate("created_by")
       .populate("members.user_id");
 
@@ -96,9 +101,35 @@ export const getWorkspaceById = async (req, res) => {
       });
     }
 
+    // 1. Get notifications for this workspace
+    const notifications = await Notification.find({ workspace_id: workspaceId })
+      .sort({ created_at: -1 })
+      .limit(10); // Get the latest 10 notifications
+
+    // 2. Count epics, tasks, sprints, bugs, and members
+    const [epicCount, taskCount, sprintCount, bugCount] = await Promise.all([
+      Epic.countDocuments({ workspace_id: workspaceId }),
+      Task.countDocuments({ workspace_id: workspaceId }),
+      Sprint.countDocuments({ workspace_id: workspaceId }),
+      Bug.countDocuments({ workspace_id: workspaceId }),
+    ]);
+
+    // Calculate member count from the workspace object
+    const memberCount = workspace.members ? workspace.members.length : 0;
+
     return res.status(200).json({
       success: true,
-      data: workspace,
+      data: {
+        workspace: workspace,
+        notifications: notifications,
+        counts: {
+          epics: epicCount,
+          tasks: taskCount,
+          sprints: sprintCount,
+          bugs: bugCount,
+          members: memberCount,
+        },
+      },
     });
   } catch (error) {
     console.error("Error fetching workspace:", error);
@@ -112,6 +143,7 @@ export const getWorkspaceById = async (req, res) => {
 // Create a new workspace
 export const createWorkspace = async (req, res) => {
   const created_by = req.user.id;
+  console.log("Creating workspace for user ID:", created_by);
   try {
     const { name, description } = req.body;
 
@@ -128,6 +160,8 @@ export const createWorkspace = async (req, res) => {
     const populatedWorkspace = await Workspace.findById(savedWorkspace._id)
       .populate("created_by")
       .populate("members.user_id");
+
+    console.log("New workspace created:", populatedWorkspace);
 
     return res.status(201).json({
       success: true,
@@ -320,7 +354,7 @@ export const deleteWorkspace = async (req, res) => {
 };
 
 // Add member to workspace
-export const addMember = async (req, res) => {
+export const  addMember = async (req, res) => {
   try {
     const { user_id, role } = req.body;
     const userId = req.user.id;

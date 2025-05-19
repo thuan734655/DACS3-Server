@@ -37,16 +37,16 @@ const loginModel = async (accountName, password, type, deviceID) => {
       ? { email: { $eq: accountName } }
       : { contactNumber: { $eq: accountName } };
   const account = await Account.findOne(query);
-  
+
   if (!account) {
     throw new Error("Account not found");
   }
   const isMatchPassword = await bcrypt.compare(password, account.password);
 
   const verifyMail = account.verifyMail;
-
+  console.log("verifyMail", account.deviceID);
   let isMatchDeviceID =
-    account.deviceID != null
+    account.deviceID != ""
       ? account.deviceID === deviceID
       : (updateDeviceID(account.email, deviceID), true);
 
