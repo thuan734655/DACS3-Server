@@ -1,4 +1,6 @@
 import User from "../models/model_database/users.js";
+import Workspace from "../models/model_database/workspaces.js";
+import mongoose from "mongoose";
 
 // Get all users with pagination
 export const getAllUsers = async (req, res) => {

@@ -15,6 +15,8 @@ import sprintRoutes from "./routes/sprints.js";
 import bugRoutes from "./routes/bugs.js";
 import invitationRoutes from "./routes/invitation.js";
 import reportDailyRoutes from "./routes/reportDailies.js";
+import taskStatsRoutes from "./routes/taskStats.js";
+import workspaceMembersRoutes from "./routes/workspaceMembers.js";
 import initSocket from "./sockets/socketHandler.js";
 import { socketAuth } from "./middlewares/socketAuth.js";
 import http from "http";
@@ -43,6 +45,8 @@ app.use("/api/bugs", bugRoutes);
 app.use("/api/reports", reportDailyRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/invitations", invitationRoutes);
+app.use("/api/task-stats", taskStatsRoutes);
+app.use("/api/workspace-members", workspaceMembersRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);

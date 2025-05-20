@@ -64,8 +64,8 @@ export const getAllWorkspacesByUserId = async (req, res) => {
     })
       .populate("created_by")
       .populate("members.user_id")
-      .skip(skip)
-      .limit(limit);
+      // .skip(skip)
+      // .limit(limit);
 
     const total = await Workspace.countDocuments({
       "members.user_id": userId,
@@ -404,7 +404,7 @@ export const  addMember = async (req, res) => {
     // Create notification for the added user
     const newNotification = new Notification({
       user_id: user_id,
-      type: "workspace_added",
+      type: "workspace",
       type_id: workspace._id,
       workspace_id: workspace._id,
       content: `You have been added to workspace "${workspace.name}"`,

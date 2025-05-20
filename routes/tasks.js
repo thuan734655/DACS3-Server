@@ -5,7 +5,8 @@ import {
   createTask,
   updateTask,
   deleteTask,
-  addComment
+  addComment,
+  getTasksNotInSprint
 } from "../controllers/taskController.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 
@@ -32,4 +33,7 @@ router.delete("/:id", deleteTask);
 // POST add comment to task
 router.post("/:id/comments", addComment);
 
-export default router; 
+// GET tasks not in any sprint for a specific workspace
+router.get("/no-sprint/:workspace_id", getTasksNotInSprint);
+
+export default router;
