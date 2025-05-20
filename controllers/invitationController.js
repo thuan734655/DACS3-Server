@@ -212,7 +212,7 @@ export const acceptWorkspaceInvitation = [
       }
 
       const { invitationId } = req.params;
-      const user_id = req.user._id;
+      const user_id = req.user.id;
 
       // Tìm lời mời
       const invitation = await Invitation.findById(invitationId).populate(
@@ -330,7 +330,7 @@ export const rejectWorkspaceInvitation = [
       }
 
       const { invitationId } = req.params;
-      const user_id = req.user._id;
+      const user_id = req.user.id;
 
       // Tìm lời mời
       const invitation = await Invitation.findById(invitationId);
