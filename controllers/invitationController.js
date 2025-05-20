@@ -2,13 +2,19 @@ import { body, param, query, validationResult } from "express-validator";
 import Invitation from "../models/model_database/invitations.js";
 import Workspace from "../models/model_database/workspaces.js";
 import User from "../models/model_database/users.js";
+import Account from "../models/model_database/accounts.js";
 import Notification from "../models/model_database/notifications.js";
-import  sendEmail  from "../helper/mail/sendMail.js";
+import sendEmail from "../helper/mail/sendMail.js";
+import mongoose from "mongoose";
 
 // Validation middleware
 const validateSendInvitation = [
   body("email").isEmail().withMessage("Invalid email"),
   body("workspace_id").isMongoId().withMessage("Invalid workspace ID"),
+  body("invited_by")
+    .optional()
+    .isMongoId()
+    .withMessage("Invalid invited_by ID"),
 ];
 
 const validateInvitationId = [
@@ -40,8 +46,17 @@ export const sendWorkspaceInvitation = [
         return res.status(400).json({ success: false, errors: errors.array() });
       }
 
-      const { email, workspace_id } = req.body;
-      const invited_by = req.user._id;
+      const { email, workspace_id, invited_by } = req.body;
+      // Sử dụng invited_by từ request hoặc từ user authentication nếu có
+      const inviterId = invited_by || req.user.id;
+
+      if (!inviterId) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Authentication required. Please provide invited_by or valid authentication.",
+        });
+      }
 
       // Kiểm tra workspace
       const workspace = await Workspace.findById(workspace_id);
@@ -51,42 +66,32 @@ export const sendWorkspaceInvitation = [
           .json({ success: false, message: "Workspace not found" });
       }
 
-      // Kiểm tra quyền
-      const isMember = workspace.members.some(
-        (member) => member.user_id.toString() === invited_by.toString()
-      );
-      if (!isMember) {
-        return res.status(403).json({
+      // Tìm account bằng email
+      const account = await Account.findOne({ email });
+      if (!account) {
+        return res.status(404).json({
           success: false,
-          message: "You are not a member of this workspace",
+          message: "Account with this email not found",
         });
       }
 
-      // Tìm user bằng email
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
-
-      // Kiểm tra đã là thành viên
-      const alreadyMember = workspace.members.some(
-        (member) => member.user_id.toString() === user._id.toString()
-      );
-      if (alreadyMember) {
-        return res
-          .status(400)
-          .json({ success: false, message: "User is already a member" });
-      }
+      // // Kiểm tra đã là thành viên
+      // const alreadyMember = workspace.members.some(
+      //   (member) => member.user_id.toString() === user._id.toString()
+      // );
+      // if (alreadyMember) {
+      //   return res
+      //     .status(400)
+      //     .json({ success: false, message: "User is already a member" });
+      // }
 
       // Tạo lời mời
       const invitation = new Invitation({
         type_invitation: "workspace",
         workspace_id,
-        user_id: user._id,
+        user_id: account.user_id,
         email,
-        invited_by,
+        invited_by: inviterId,
         status: "pending",
       });
       await invitation.save();
@@ -97,17 +102,17 @@ export const sendWorkspaceInvitation = [
 
       // Tạo thông báo
       const notification = new Notification({
-        user_id: user._id,
-        type: "invitation_sent",
+        user_id: account.user_id,
+        type: "invitation",
         type_id: invitation._id,
         workspace_id,
-        content: `You have been invited to join workspace ${workspace.name}`,
+        content: `Bạn đã được mời tham gia workspace ${workspace.name}`,
       });
       await notification.save();
 
       // Emit Socket.IO
       const io = req.app.get("io");
-      io.to(`user-${user._id}`).emit("notification:new", notification);
+      io.to(`user-${account.user_id}`).emit("notification:new", notification);
 
       return res.status(201).json({ success: true, data: invitation });
     } catch (error) {
@@ -127,11 +132,13 @@ export const getInvitations = [
       }
 
       const { status, page = 1, limit = 10 } = req.query;
-      const user_id = req.user._id;
+   
 
-      // Xây dựng query
-      const query = { user_id };
+const user_id = new mongoose.Types.ObjectId(req.user.id);
+const query = { user_id };
+
       if (status) query.status = status;
+      console.log("query", query);
 
       // Phân trang
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -142,6 +149,8 @@ export const getInvitations = [
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(parseInt(limit));
+
+      console.log("invitations", invitations);
 
       return res.status(200).json({
         success: true,
@@ -241,37 +250,70 @@ export const acceptWorkspaceInvitation = [
           .json({ success: false, message: "Workspace not found" });
       }
 
-      workspace.members.push({ user_id, role: "member" });
-      await workspace.save();
+      // Check if user is already a member
+      const memberExists = workspace.members.some(
+        (member) => member.user_id.toString() === user_id.toString()
+      );
 
-      // Tạo thông báo
-      const notifications = workspace.members.map((member) => ({
-        user_id: member.user_id,
-        type: "member_joined",
+      if (!memberExists) {
+        // Add user to workspace with proper role casing ("Member" instead of "member")
+        workspace.members.push({ user_id, role: "Member" });
+        await workspace.save();
+      }
+
+      // Get populated workspace
+      const updatedWorkspace = await Workspace.findById(invitation.workspace_id)
+        .populate("created_by")
+        .populate("members.user_id");
+
+      // Create notification for the person who sent the invitation
+      const inviterNotification = new Notification({
+        user_id: invitation.invited_by,
+        type: "invitation",
         type_id: workspace._id,
         workspace_id: workspace._id,
-        content: `${req.user.username} has joined the workspace`,
-      }));
-      await Notification.insertMany(notifications);
+        content: `${
+          req.user.username || "User"
+        } accepted your invitation to workspace "${workspace.name}"`,
+        related_id: user_id,
+        is_read: false,
+        created_at: new Date(),
+      });
 
-      // Emit Socket.IO
-      notifications.forEach((notification) => {
-        io.to(`user-${notification.user_id}`).emit(
-          "notification:new",
-          notification
-        );
+      await inviterNotification.save();
+
+      // Emit socket events
+      const io = req.app.get("io");
+
+      // Notify the inviter
+      const populatedInviterNotification = await inviterNotification.populate(
+        "user_id workspace_id"
+      );
+      io.to(`user-${invitation.invited_by}`).emit(
+        "notification:new",
+        populatedInviterNotification
+      );
+
+      // Notify all workspace members about the new member
+      updatedWorkspace.members.forEach((member) => {
+        if (member.user_id._id.toString() !== user_id.toString()) {
+          io.to(`user-${member.user_id._id}`).emit("workspace:memberAdded", {
+            workspace: updatedWorkspace,
+            newMember: user_id,
+          });
+        }
       });
-      io.to(`workspace-${workspace._id}`).emit("member:joined", {
-        user_id,
-        workspace_id: workspace._id,
-      });
+
+      // Emit workspace:joined event to the new member
+      io.to(`user-${user_id}`).emit("workspace:joined", updatedWorkspace);
 
       return res.status(200).json({
         success: true,
-        message: "Invitation accepted",
-        data: invitation,
+        message: "You have joined the workspace successfully",
+        data: updatedWorkspace,
       });
     } catch (error) {
+      console.error("Error accepting workspace invitation:", error);
       return res.status(500).json({ success: false, message: error.message });
     }
   },

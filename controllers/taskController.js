@@ -14,6 +14,8 @@ export const getAllTasks = async (req, res) => {
     const query = {};
     let isFilter = false;
 
+    console.log("User ID:", req.query.workspace_id);
+
     // Filter by workspace_id if provided
     if (req.query.workspace_id) {
       query.workspace_id = req.query.workspace_id;
@@ -52,6 +54,8 @@ export const getAllTasks = async (req, res) => {
     if (!isFilter) {
       query.created_by = req.user.id;
     }
+
+    console.log("Query:", query);
     const tasks = await Task.find(query)
       .populate("workspace_id")
       .populate("epic_id")
@@ -583,87 +587,6 @@ export const deleteTask = async (req, res) => {
 };
 
 // Add a comment to a task
-// Get all tasks that are not in any sprint for a specific workspace
-export const getTasksNotInSprint = async (req, res) => {
-  try {
-    const { workspace_id } = req.params;
-    
-    if (!workspace_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Workspace ID is required"
-      });
-    }
-    
-    // Check if user has permission in this workspace
-    const userId = req.user.id;
-    const hasPermission = await checkWorkspacePermission(workspace_id, userId);
-    
-    if (!hasPermission) {
-      return res.status(403).json({
-        success: false,
-        message: "You don't have permission to view tasks in this workspace"
-      });
-    }
-    
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-    
-    // Build the query to find tasks in the workspace that don't have a sprint_id
-    const query = {
-      workspace_id: workspace_id,
-      $or: [
-        { sprint_id: null },
-        { sprint_id: { $exists: false } }
-      ]
-    };
-    
-    // Add optional filters
-    if (req.query.status) {
-      query.status = req.query.status;
-    }
-    
-    if (req.query.priority) {
-      query.priority = req.query.priority;
-    }
-    
-    if (req.query.assigned_to) {
-      query.assigned_to = req.query.assigned_to;
-    }
-    
-    if (req.query.epic_id) {
-      query.epic_id = req.query.epic_id;
-    }
-    
-    // Get tasks that match our criteria
-    const tasks = await Task.find(query)
-      .populate("workspace_id")
-      .populate("epic_id")
-      .populate("created_by")
-      .populate("assigned_to")
-      .skip(skip)
-      .limit(limit)
-      .sort({ created_at: -1 });
-    
-    // Get total count for pagination
-    const total = await Task.countDocuments(query);
-    
-    return res.status(200).json({
-      success: true,
-      count: tasks.length,
-      total,
-      data: tasks
-    });
-  } catch (error) {
-    console.error("Error fetching tasks not in sprint:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
 export const addComment = async (req, res) => {
   try {
     const taskId = req.params.id;

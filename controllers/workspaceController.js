@@ -4,6 +4,7 @@ import Epic from "../models/model_database/epics.js";
 import Task from "../models/model_database/tasks.js";
 import Sprint from "../models/model_database/sprints.js";
 import Bug from "../models/model_database/bugs.js";
+import Invitation from "../models/model_database/invitations.js";
 import mongoose from "mongoose";
 
 // Helper function to check if user has specific roles in workspace
@@ -375,6 +376,8 @@ export const  addMember = async (req, res) => {
         message: "Only workspace leaders and managers can add members",
       });
     }
+
+    
 
     // Check if user is already a member
     const memberExists = workspace.members.some(

@@ -1,12 +1,3 @@
-/**
- * Socket.IO handler for real-time communication
- * 
- * This module handles WebSocket connections and events for real-time features:
- * - Notifications
- * - Messages (channel & direct)
- * - Workspace & channel updates
- */
-
 import User from '../models/model_database/users.js';
 import Message from '../models/model_database/messages.js';
 import Channel from '../models/model_database/channels.js';

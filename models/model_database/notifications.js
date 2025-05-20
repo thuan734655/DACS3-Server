@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: "String",
-    enum: ["task", "report", "channel", "epic", "sprint", "bug"],
+    enum: ["task", "report", "channel", "epic", "sprint", "bug", "invitation"],
     required: true,
   },
   type_id: {
@@ -37,7 +37,7 @@ const notificationSchema = new mongoose.Schema({
   },
   created_at: {
     type: "Date",
-    default: "Date.now",
+    default: Date.now,
   },
 });
 
